@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"C:\\\\Users\\\\ricar\\\\Desktop\\\\subjects\\\\statistical-learning\\\\tma4268-project2\" && uv run installer.py 2>&1)",
+      "Bash(where uv:*)",
+      "Read(//c/Users/ricar/AppData/Local/uv/**)",
+      "Read(//c/Users/ricar/.local/bin//**)",
+      "Read(//c/Users/ricar/AppData/Roaming/**)",
+      "Bash(cd \"C:\\\\Users\\\\ricar\\\\Desktop\\\\subjects\\\\statistical-learning\\\\tma4268-project2\" && /c/Users/ricar/.local/bin/uv run installer.py 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\ricar\\\\Desktop\\\\subjects\\\\statistical-learning\\\\tma4268-project2\" && .venv/Scripts/python analyze_missing.py)",
+      "Bash(cd \"C:\\\\Users\\\\ricar\\\\Desktop\\\\subjects\\\\statistical-learning\\\\tma4268-project2\" && .venv/Scripts/pip install matplotlib missingno -q)",
+      "Bash(cd \"C:\\\\Users\\\\ricar\\\\Desktop\\\\subjects\\\\statistical-learning\\\\tma4268-project2\" && .venv/Scripts/pip.exe install matplotlib missingno -q)",
+      "Bash(cd \"C:/Users/ricar/Desktop/subjects/statistical-learning/tma4268-project2\" && .venv/Scripts/python.exe -m pip install matplotlib missingno -q 2>&1)",
+      "Bash(python --version 2>&1 && python -m pip install matplotlib missingno -q 2>&1 | tail -5)",
+      "Bash(python -c \"import matplotlib; import missingno\" 2>&1)"
+    ]
+  }
+}

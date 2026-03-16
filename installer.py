@@ -10,7 +10,7 @@ DATASET_BANK = {
     "ultimate-ufc": "https://www.kaggle.com/datasets/mdabbert/ultimate-ufc-dataset",
 }
 TO_INSTALL = [
-    "fifa24",
+    "ultimate-ufc",
 ]
 
 DATASETS_DIR = Path("datasets")
