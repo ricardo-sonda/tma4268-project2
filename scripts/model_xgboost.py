@@ -121,3 +121,8 @@ print("Saved plots/models/xgb_importance.png")
 
 print("\nTop 25 features:")
 print(top25.sort_values(ascending=False).to_string())
+
+# Save CV predictions
+np.savez("results/xgboost.npz",
+         y=y.values, y_pred=y_pred, y_proba=y_proba)
+print("Saved results/xgboost.npz")

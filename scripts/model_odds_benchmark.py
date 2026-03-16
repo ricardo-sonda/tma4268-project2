@@ -88,6 +88,11 @@ print("Saved plots/models/benchmark_roc.png")
 # ============================================================
 # 5. Model comparison table
 # ============================================================
+# Save CV predictions
+np.savez("results/logit_odds.npz",
+         y=y.values, y_pred=y_pred, y_proba=y_proba)
+print("Saved results/logit_odds.npz")
+
 print("\n" + "=" * 60)
 print("Model Comparison")
 print("=" * 60)

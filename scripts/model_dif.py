@@ -154,3 +154,23 @@ print("=" * 70)
 print(f"Dif model (no odds):  R²={ols.rsquared:.4f}  Adj R²={ols.rsquared_adj:.4f}  AIC={ols.aic:.0f}")
 print(f"Previous model (with odds, 27 predictors): R²=0.1280  Adj R²=0.1240  AIC=6828")
 print(f"\nPredictors: {len(predictors)} vs 27")
+
+# ============================================================
+# 8. Logistic Regression CV (for ROC comparison)
+# ============================================================
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.metrics import accuracy_score, roc_auc_score
+
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+pipe = make_pipeline(StandardScaler(),
+                     LogisticRegression(max_iter=2000, random_state=42))
+y = model_df["WinnerRed"]
+y_pred = cross_val_predict(pipe, X, y, cv=cv, method="predict")
+y_proba = cross_val_predict(pipe, X, y, cv=cv, method="predict_proba")[:, 1]
+print(f"\nLogistic 5-fold CV: Accuracy={accuracy_score(y, y_pred):.4f}  AUC={roc_auc_score(y, y_proba):.4f}")
+
+np.savez("results/logit_dif.npz",
+         y=y.values, y_pred=y_pred, y_proba=y_proba)
+print("Saved results/logit_dif.npz")
