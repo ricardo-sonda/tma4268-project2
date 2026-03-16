@@ -104,3 +104,85 @@ print("Saved plots/models/logit_no_odds_roc.png")
 np.savez("results/logit_no_odds.npz",
          y=y.values, y_pred=y_pred, y_proba=y_proba)
 print("Saved results/logit_no_odds.npz")
+
+# ============================================================
+# 6. Feature importance analysis
+# ============================================================
+from sklearn.inspection import permutation_importance
+
+print("\n" + "=" * 65)
+print("Feature Importance Analysis")
+print("=" * 65)
+
+# --- 6a. Statsmodels: Wald z-statistics and p-values ---
+sm_results = pd.DataFrame({
+    "coef": logit.params,
+    "z": logit.tvalues,
+    "p-value": logit.pvalues,
+    "abs_z": logit.tvalues.abs(),
+}).drop("Intercept", errors="ignore").sort_values("abs_z", ascending=False)
+
+print("\nWald z-statistics (statsmodels logit):")
+print(sm_results.to_string())
+
+fig, ax = plt.subplots(figsize=(10, 9))
+plot_data = sm_results.sort_values("abs_z")
+colors = ["firebrick" if p < 0.05 else "grey" for p in plot_data["p-value"]]
+ax.barh(plot_data.index, plot_data["abs_z"], color=colors)
+ax.axvline(1.96, color="black", linestyle="--", linewidth=0.8, label="z=1.96 (p=0.05)")
+ax.set_xlabel("|Wald z-statistic|")
+ax.set_title("Feature Importance -- Wald z (red = p < 0.05)")
+ax.legend()
+plt.tight_layout()
+plt.savefig("plots/models/logit_no_odds_wald.png", dpi=150, bbox_inches="tight")
+plt.close()
+print("Saved plots/models/logit_no_odds_wald.png")
+
+# --- 6b. Standardized coefficients (sklearn) ---
+pipe.fit(X, y)
+lr_model = pipe.named_steps["logisticregression"]
+scaler = pipe.named_steps["standardscaler"]
+
+std_coefs = pd.Series(lr_model.coef_[0], index=X.columns)
+std_coefs_abs = std_coefs.abs().sort_values(ascending=False)
+
+print("\nStandardized coefficients (sklearn, scaled features):")
+print(pd.DataFrame({
+    "std_coef": std_coefs[std_coefs_abs.index],
+    "abs_std_coef": std_coefs_abs
+}).to_string())
+
+fig, ax = plt.subplots(figsize=(10, 9))
+plot_std = std_coefs[std_coefs_abs.index].sort_values()
+colors = np.where(plot_std > 0, "firebrick", "steelblue")
+ax.barh(plot_std.index, plot_std.values, color=colors)
+ax.axvline(0, color="black", linewidth=0.5)
+ax.set_xlabel("Standardized Coefficient")
+ax.set_title("Feature Importance -- Standardized Logistic Coefs (red=+, blue=-)")
+plt.tight_layout()
+plt.savefig("plots/models/logit_no_odds_std_coefs.png", dpi=150, bbox_inches="tight")
+plt.close()
+print("Saved plots/models/logit_no_odds_std_coefs.png")
+
+# --- 6c. Permutation importance (on full fitted model) ---
+perm = permutation_importance(pipe, X, y, n_repeats=20, random_state=42,
+                              scoring="roc_auc", n_jobs=-1)
+perm_df = pd.DataFrame({
+    "mean": perm.importances_mean,
+    "std": perm.importances_std,
+}, index=X.columns).sort_values("mean", ascending=False)
+
+print("\nPermutation importance (AUC drop, 20 repeats):")
+print(perm_df.to_string())
+
+fig, ax = plt.subplots(figsize=(10, 9))
+plot_perm = perm_df.sort_values("mean")
+colors = ["firebrick" if m > 0.001 else "grey" for m in plot_perm["mean"]]
+ax.barh(plot_perm.index, plot_perm["mean"], xerr=plot_perm["std"], color=colors)
+ax.axvline(0, color="black", linewidth=0.5)
+ax.set_xlabel("Mean AUC decrease")
+ax.set_title("Permutation Importance -- Logistic no odds")
+plt.tight_layout()
+plt.savefig("plots/models/logit_no_odds_perm_importance.png", dpi=150, bbox_inches="tight")
+plt.close()
+print("Saved plots/models/logit_no_odds_perm_importance.png")
