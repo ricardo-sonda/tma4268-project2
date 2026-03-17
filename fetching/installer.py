@@ -13,7 +13,10 @@ TO_INSTALL = [
     "ultimate-ufc",
 ]
 
-DATASETS_DIR = Path("datasets")
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+
+DATASETS_DIR = PROJECT_ROOT / "datasets"
 
 
 def kaggle_handle_from_url(kaggle_url: str) -> str:

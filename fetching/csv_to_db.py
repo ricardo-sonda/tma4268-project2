@@ -7,8 +7,11 @@ from pathlib import Path
 
 import pandas as pd
 
-DATASETS_DIR = Path("datasets")
-SQL_DIR = Path("sql")
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+
+DATASETS_DIR = PROJECT_ROOT / "datasets"
+SQL_DIR = PROJECT_ROOT / "sql"
 DB_PATH = SQL_DIR / "database.db"
 
 

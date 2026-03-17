@@ -5,7 +5,7 @@ Reads ufc-master.csv and produces ufc-clean.csv with the following changes,
 applied in order:
 
 1. Drop unwanted columns (win breakdowns, derived diffs, rankings, fight
-   outcomes, raw odds).  See columns.md for the full KEEP/DROP rationale.
+   outcomes, raw odds).  See `fetching/columns.md` for the full KEEP/DROP rationale.
 2. Drop rows with missing or invalid betting odds.
 3. Convert American moneyline odds to decimal odds and normalized implied
    probabilities.
@@ -17,8 +17,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-INPUT = Path("datasets/ultimate-ufc/ufc-master.csv")
-OUTPUT = Path("datasets/ultimate-ufc/ufc-clean.csv")
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+
+INPUT = PROJECT_ROOT / "datasets/ultimate-ufc/ufc-master.csv"
+OUTPUT = PROJECT_ROOT / "datasets/ultimate-ufc/ufc-clean.csv"
 
 if not INPUT.exists():
     print(f"Error: {INPUT} not found", file=sys.stderr)
