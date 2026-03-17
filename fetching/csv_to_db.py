@@ -19,31 +19,48 @@ def sanitize_sql_name(value: str) -> str:
     """Map file and folder names to SQLite-safe identifiers."""
     return re.sub(r"\W+", "_", value).strip("_")
 
-csvs = sorted(DATASETS_DIR.rglob("*.csv"))
-if not csvs:
-    print(f"Error: no CSV files found under {DATASETS_DIR}/", file=sys.stderr)
-    sys.exit(1)
 
-SQL_DIR.mkdir(exist_ok=True)
+def build_database(datasets_dir: Path = DATASETS_DIR, db_path: Path = DB_PATH) -> Path:
+    csvs = sorted(datasets_dir.rglob("*.csv"))
+    if not csvs:
+        raise FileNotFoundError(f"no CSV files found under {datasets_dir}/")
 
-for stale_db in SQL_DIR.glob("*.db"):
-    stale_db.unlink()
+    db_path.parent.mkdir(exist_ok=True)
 
-con = sqlite3.connect(DB_PATH)
+    for stale_db in db_path.parent.glob("*.db"):
+        stale_db.unlink()
 
-for csv_path in csvs:
-    relative_parent = csv_path.relative_to(DATASETS_DIR).parent.parts
-    folder_part = "__".join(sanitize_sql_name(part) for part in relative_parent if part)
-    file_part = sanitize_sql_name(csv_path.stem)
-    table_name = f"{folder_part}__{file_part}" if folder_part else file_part
+    con = sqlite3.connect(db_path)
 
     try:
-        df = pd.read_csv(csv_path)
-    except UnicodeDecodeError:
-        df = pd.read_csv(csv_path, encoding="latin-1")
+        for csv_path in csvs:
+            relative_parent = csv_path.relative_to(datasets_dir).parent.parts
+            folder_part = "__".join(sanitize_sql_name(part) for part in relative_parent if part)
+            file_part = sanitize_sql_name(csv_path.stem)
+            table_name = f"{folder_part}__{file_part}" if folder_part else file_part
 
-    df.to_sql(table_name, con, if_exists="replace", index=False)
-    print(f"  {csv_path} -> {DB_PATH}::{table_name} ({len(df)} rows, {len(df.columns)} cols)")
+            try:
+                df = pd.read_csv(csv_path)
+            except UnicodeDecodeError:
+                df = pd.read_csv(csv_path, encoding="latin-1")
 
-con.close()
-print(f"\nCreated {DB_PATH} with {len(csvs)} tables")
+            df.to_sql(table_name, con, if_exists="replace", index=False)
+            print(f"  {csv_path} -> {db_path}::{table_name} ({len(df)} rows, {len(df.columns)} cols)")
+    finally:
+        con.close()
+
+    print(f"\nCreated {db_path} with {len(csvs)} tables")
+    return db_path
+
+
+def main() -> int:
+    try:
+        build_database()
+    except FileNotFoundError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

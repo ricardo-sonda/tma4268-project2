@@ -2,3 +2,4 @@ datasets/
 .venv/
 .claude/
 *.db
+__pycache__/

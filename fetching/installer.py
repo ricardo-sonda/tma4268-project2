@@ -1,3 +1,5 @@
+import argparse
+from collections.abc import Sequence
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -45,14 +47,47 @@ def download_dataset(dataset_name: str) -> None:
     print(f"Path: {path}")
 
 
-def main() -> None:
-    if not TO_INSTALL:
-        print("No datasets selected. Add names to TO_INSTALL and run again.")
-        return
-
-    for dataset_name in TO_INSTALL:
+def download_datasets(dataset_names: Sequence[str]) -> None:
+    for dataset_name in dataset_names:
         download_dataset(dataset_name)
 
 
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Download Kaggle datasets into datasets/. "
+            "If no dataset names are given, TO_INSTALL is used."
+        )
+    )
+    parser.add_argument(
+        "datasets",
+        nargs="*",
+        help="Dataset names from DATASET_BANK to download.",
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List available dataset names and exit.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = parse_args(argv)
+
+    if args.list:
+        for name, url in DATASET_BANK.items():
+            print(f"{name}: {url}")
+        return 0
+
+    dataset_names = args.datasets or TO_INSTALL
+    if not dataset_names:
+        print("No datasets selected. Add names to TO_INSTALL, or pass dataset names on the command line.")
+        return 1
+
+    download_datasets(dataset_names)
+    return 0
+
+
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
