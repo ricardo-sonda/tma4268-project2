@@ -4,7 +4,7 @@ Project 2 in TMA4268.
 ## Setup
 
 Install dependencies:
-```bash
+```
 uv sync
 ```
 
@@ -14,7 +14,7 @@ Kaggle downloads require credentials configured for `kagglehub`.
 
 Run the full UFC pipeline from the project root:
 
-```bash
+```
 uv run python init_data.py
 ```
 
@@ -35,7 +35,7 @@ If you want to run the steps manually:
 
 `fetching/installer.py` still supports editing `TO_INSTALL` directly. If you do not pass dataset names on the command line, it will download whatever is listed there.
 
-```bash
+```
 uv run python fetching/installer.py --list
 uv run python fetching/installer.py ultimate-ufc
 uv run python fetching/clean_data.py

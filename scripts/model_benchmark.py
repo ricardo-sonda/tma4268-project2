@@ -48,7 +48,9 @@ lr.fit(X, y)
 # ── 2. ROC curve ─────────────────────────────────────────────
 fpr, tpr, _ = roc_curve(y, y_proba)
 fig, ax = plt.subplots(figsize=(7, 6))
-ax.plot(fpr, tpr, lw=2, label=f"Benchmark Logistic (AUC={roc_auc_score(y, y_proba):.3f})")
+ax.plot(
+    fpr, tpr, lw=2, label=f"Benchmark Logistic (AUC={roc_auc_score(y, y_proba):.3f})"
+)
 ax.plot([0, 1], [0, 1], "k--", lw=1, label="Random")
 ax.set_xlabel("False Positive Rate")
 ax.set_ylabel("True Positive Rate")
