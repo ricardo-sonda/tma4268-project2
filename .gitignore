@@ -1,4 +1,6 @@
 datasets/
+data/
+reports/
 .venv/
 .claude/
 *.db
