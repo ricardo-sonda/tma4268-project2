@@ -1,5 +1,9 @@
-datasets/
+data/
 .venv/
 .claude/
 *.db
 __pycache__/
+.DS_Store
+reports/figures/
+reports/metrics/
+reports/predictions/

@@ -1,2 +1,0 @@
-- [ ] Tydelig definert målfunksjon (odds vs expected value, hvordan sammenligner vi etc)
-- [ ] Bestemme modell og forklaringsvariabler

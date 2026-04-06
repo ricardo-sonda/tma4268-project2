@@ -1,0 +1,4 @@
+- [ ] Tydelig definert målfunksjon (odds vs expected value, hvordan sammenligner vi etc)
+- [ ] Visualisere resultater på en god måte når man kjører make evaluate
+- [ ] Add more feature-set functions in `src/features.py`
+- [ ] Add more model files in `src/modeling/`

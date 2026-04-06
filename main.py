@@ -1,5 +1,5 @@
 def main():
-    print("Hello from tma4268-project2!")
+    print("Hello from ccds-ufc!")
 
 
 if __name__ == "__main__":
