@@ -1,6 +1,22 @@
 # tma4268-project2
 Project 2 in TMA4268.
 
+## Problem Description
+
+We use a comprehensive UFC dataset (~6500 fights, ~50 features per fight) to predict fight outcomes. Our features are all publicly available information known before a fight: fighter physical attributes (height, reach, weight, age), career records (wins, losses, streaks), and historical performance averages (striking accuracy, takedown rate, submission attempts).
+
+**The goal is to build a model that, using only these public features, produces better win-probability estimates than the bookmakers' odds.** The bookmaker odds are not used as input to our models — they serve purely as the benchmark to beat. If our model's predicted probabilities are more accurate than the implied probabilities from the betting market, we have found signal that the market missed. We can then quantify the practical value of that edge by simulating a betting strategy against the historical odds.
+
+This framing connects to several core topics in statistical learning:
+
+- **Classification** — the fight outcome is binary (Red wins / Blue wins), making this a natural classification problem where we can explore logistic regression, LDA/QDA, tree-based methods, and SVMs.
+- **Model selection & validation** — since fights are ordered in time, naive cross-validation leaks future information. We need chronological splits and must carefully think about what "generalization" means when the data-generating process (fighter careers, rule changes, evolving meta) shifts over time.
+- **Feature engineering vs. regularization** — with ~50 raw features (many correlated, e.g. wins and win streaks), we face the classic bias-variance tradeoff. Shrinkage methods (ridge, lasso) and subset selection are directly applicable.
+- **Calibration & probabilistic prediction** — raw classification accuracy is insufficient. We need well-calibrated predicted probabilities so we can meaningfully compare our model's confidence against the bookmaker's implied probabilities.
+- **The value function** — correctly predicting a heavy favorite is easy but worthless at the betting window (the odds pay little), while correctly predicting an upset is rare but extremely profitable. This means our evaluation should weight predictions by the odds they'd be bet against, connecting to decision theory and asymmetric loss functions.
+
+In short: can statistical learning methods, applied to publicly available fighter data alone, produce probability estimates that outperform the betting market?
+
 ## Setup
 
 Install dependencies:
