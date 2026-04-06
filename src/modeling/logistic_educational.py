@@ -37,3 +37,11 @@ class LogisticEducationalModel(BaseModel):
     def predict_proba(self, X) -> np.ndarray:
         X = X[self.active_feature_names]
         return self.pipeline.predict_proba(X)[:, 1]
+
+
+if __name__ == "__main__":
+    model = LogisticEducationalModel()
+    dataset = model.feature_builder()
+    X = dataset.X[model.active_feature_names].dropna()
+    y = dataset.y
+    print(y.mean())

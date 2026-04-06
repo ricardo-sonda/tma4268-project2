@@ -31,6 +31,13 @@ METADATA_COLUMNS = [
     "RedImpliedProb",
     "BlueImpliedProb",
 ]
+DIFF_CONTEXT_COLUMNS = [
+    "TitleBout",
+    "WeightClass",
+    "Gender",
+    "NumberOfRounds",
+    "EmptyArena",
+]
 
 
 @dataclass(frozen=True)
@@ -50,6 +57,7 @@ def load_interim_ufc_data(path=UFC_CLEAN_CSV) -> pd.DataFrame:
 def load_ground_zero_frame(df: pd.DataFrame | None = None) -> pd.DataFrame:
     frame = load_interim_ufc_data() if df is None else df.copy()
     frame = frame[frame["Winner"].isin(["Red", "Blue"])].copy()
+    frame = frame.drop(columns=["EmptyArena"], errors="ignore")
     frame["WinnerRed"] = (frame["Winner"] == "Red").astype(int)
     frame["EventDate"] = pd.to_datetime(frame["Date"])
     return frame.sort_values("EventDate").reset_index(drop=True)
@@ -167,3 +175,40 @@ def diff_only_feature_set(df: pd.DataFrame | None = None) -> PreparedDataset:
     metadata = _build_metadata(aligned_frame)
 
     return PreparedDataset(name="diff_only", X=X, y=y, metadata=metadata)
+
+
+def raw_imputed_feature_set(df: pd.DataFrame | None = None) -> PreparedDataset:
+    frame = load_ground_zero_frame(df)
+
+    drop_columns = set(_drop_columns_by_keyword(frame, DROP_KEYWORDS))
+    drop_columns.update(BASE_DROP_COLUMNS)
+
+    X = frame.drop(columns=sorted(drop_columns)).reset_index(drop=True)
+    y = frame["WinnerRed"].reset_index(drop=True)
+    metadata = _build_metadata(frame)
+
+    return PreparedDataset(name="raw_imputed", X=X, y=y, metadata=metadata)
+
+
+def diff_imputed_feature_set(df: pd.DataFrame | None = None) -> PreparedDataset:
+    frame = load_ground_zero_frame(df)
+
+    context_columns = [
+        column for column in DIFF_CONTEXT_COLUMNS if column in frame.columns
+    ]
+    context_frame = frame[context_columns].copy()
+
+    diff_features: dict[str, pd.Series] = {}
+    for stem, red_column, blue_column in _paired_corner_columns(frame):
+        red_series = frame[red_column]
+        blue_series = frame[blue_column]
+
+        if is_numeric_dtype(red_series) and is_numeric_dtype(blue_series):
+            diff_features[f"{stem}Diff"] = red_series - blue_series
+
+    diff_frame = pd.DataFrame(diff_features, index=frame.index)
+    X = pd.concat([context_frame, diff_frame], axis=1).reset_index(drop=True)
+    y = frame["WinnerRed"].reset_index(drop=True)
+    metadata = _build_metadata(frame)
+
+    return PreparedDataset(name="diff_imputed", X=X, y=y, metadata=metadata)

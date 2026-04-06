@@ -8,6 +8,10 @@ from dataclasses import asdict, dataclass
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
 from sklearn.metrics import accuracy_score, brier_score_loss, log_loss, roc_auc_score, roc_curve
 
 from .config import FIGURES_DIR, METRICS_DIR, PREDICTIONS_DIR
@@ -156,3 +160,89 @@ def print_summary(summary: EvaluationSummary) -> None:
     print(f"Bookmaker Brier score: {summary.bookmaker_brier:.4f}")
     print(f"Model ROC AUC:         {summary.roc_auc:.4f}")
     print(f"Bookmaker ROC AUC:     {summary.bookmaker_roc_auc:.4f}")
+
+
+def _delta_cell(model_val: float, book_val: float, lower_is_better: bool) -> Text:
+    """Format a metric cell showing model value and delta vs bookmaker."""
+    delta = model_val - book_val
+    is_better = delta < 0 if lower_is_better else delta > 0
+
+    val_text = f"{model_val:.4f}"
+    if abs(delta) < 1e-6:
+        return Text(val_text, style="dim")
+
+    arrow = "+" if delta > 0 else ""
+    delta_str = f" ({arrow}{delta:.4f})"
+    text = Text(val_text, style="bold green" if is_better else "bold red")
+    text.append(delta_str, style="green" if is_better else "red")
+    return text
+
+
+def print_leaderboard(summaries: list[EvaluationSummary]) -> None:
+    """Print a rich leaderboard table sorted by log loss (primary metric)."""
+    if not summaries:
+        return
+
+    console = Console()
+    ranked = sorted(summaries, key=lambda s: s.log_loss)
+
+    # Bookmaker reference (same across all models since same test split)
+    book = ranked[0]
+
+    # Header info
+    console.print()
+    console.print(
+        Panel(
+            f"[bold]{len(ranked)}[/bold] models  ·  "
+            f"[bold]{ranked[0].train_rows}[/bold] train / "
+            f"[bold]{ranked[0].test_rows}[/bold] test rows  ·  "
+            f"chronological 80/20 split",
+            title="[bold]Model Leaderboard[/bold]",
+            subtitle="ranked by log loss (lower is better)",
+            border_style="blue",
+        )
+    )
+
+    # Bookmaker baseline row
+    console.print(
+        f"  [dim]Bookmaker baseline:[/dim]  "
+        f"Acc [bold]{book.bookmaker_accuracy:.4f}[/bold]  "
+        f"LogLoss [bold]{book.bookmaker_log_loss:.4f}[/bold]  "
+        f"Brier [bold]{book.bookmaker_brier:.4f}[/bold]  "
+        f"AUC [bold]{book.bookmaker_roc_auc:.4f}[/bold]"
+    )
+    console.print()
+
+    table = Table(show_header=True, header_style="bold cyan", show_lines=True, pad_edge=True)
+    table.add_column("#", style="bold", width=3, justify="right")
+    table.add_column("Model", style="bold white", min_width=20)
+    table.add_column("Features", style="dim", min_width=12)
+    table.add_column("Accuracy", min_width=18, justify="right")
+    table.add_column("Log Loss", min_width=18, justify="right")
+    table.add_column("Brier", min_width=18, justify="right")
+    table.add_column("ROC AUC", min_width=18, justify="right")
+
+    for i, s in enumerate(ranked, 1):
+        rank_style = "bold yellow" if i == 1 else ("bold" if i <= 3 else "")
+        rank_text = Text(str(i), style=rank_style)
+
+        if i == 1:
+            name_text = Text(f"* {s.model_name}", style="bold yellow")
+        else:
+            name_text = Text(s.model_name)
+
+        table.add_row(
+            rank_text,
+            name_text,
+            s.feature_set,
+            _delta_cell(s.accuracy, s.bookmaker_accuracy, lower_is_better=False),
+            _delta_cell(s.log_loss, s.bookmaker_log_loss, lower_is_better=True),
+            _delta_cell(s.brier, s.bookmaker_brier, lower_is_better=True),
+            _delta_cell(s.roc_auc, s.bookmaker_roc_auc, lower_is_better=False),
+        )
+
+    console.print(table)
+    console.print(
+        "  [dim]Delta vs bookmaker: [green]+better[/green] [red]+worse[/red][/dim]"
+    )
+    console.print()

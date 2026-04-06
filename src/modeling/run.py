@@ -3,7 +3,7 @@
 import argparse
 
 from .registry import MODEL_CLASSES
-from ..evaluation import evaluate_model
+from ..evaluation import evaluate_model, print_leaderboard
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -15,8 +15,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     model_names = sorted(MODEL_CLASSES) if args.model == "all" else [args.model]
+    summaries = []
     for model_name in model_names:
-        evaluate_model(MODEL_CLASSES[model_name]())
+        summaries.append(evaluate_model(MODEL_CLASSES[model_name]()))
+    if len(summaries) > 1:
+        print_leaderboard(summaries)
     return 0
 
 
