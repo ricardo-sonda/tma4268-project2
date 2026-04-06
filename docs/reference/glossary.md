@@ -4,33 +4,34 @@ This file defines the main project terms.
 
 ## ground_zero
 
-The cleaned baseline UFC dataset in:
-- [`data/interim/ultimate-ufc/ufc-clean.csv`](../../data/interim/ultimate-ufc/ufc-clean.csv)
+The cleaned baseline UFC dataset in [`data/interim/ultimate-ufc/ufc-clean.csv`](../../data/interim/ultimate-ufc/ufc-clean.csv).
 
-It is the starting point for feature engineering.
+Canonical baseline description: [`docs/architecture/data-flow.md`](../architecture/data-flow.md).
 
 ## Feature Set
 
-A function in [`src/features.py`](../../src/features.py) that converts the ground-zero dataset into a standardized `PreparedDataset`.
+A function in [`src/features.py`](../../src/features.py) that converts `ground_zero` into a standardized `PreparedDataset`.
+
+Canonical placement: [`docs/architecture/repo-structure.md`](../architecture/repo-structure.md).
 
 ## Model
 
-A class under [`src/modeling/`](../../src/modeling) that subclasses [`BaseModel`](../../src/modeling/base.py) and implements:
-- `fit`
-- `predict_proba`
+A class under [`src/modeling/`](../../src/modeling) that subclasses [`BaseModel`](../../src/modeling/base.py) and implements `fit` and `predict_proba`.
+
+Canonical placement: [`docs/architecture/repo-structure.md`](../architecture/repo-structure.md).
 
 ## Evaluator
 
-The shared logic in [`src/evaluation.py`](../../src/evaluation.py) that:
-- runs the standardized split
-- scores models
-- compares them to bookmaker probabilities
-- writes outputs
+The shared logic in [`src/evaluation.py`](../../src/evaluation.py).
+
+Canonical contract: [`docs/workflows/evaluation.md`](../workflows/evaluation.md).
 
 ## Canonical Documentation
 
-Documentation under [`docs/`](..). This is shared project truth.
+Documentation under [`docs/`](..).
 
 ## Human-Only Material
 
-Material under [`human/`](../../human). This is human-only, non-canonical, and outside the normal agent workflow. Coding agents must not read or modify it without explicit user approval.
+Material under [`human/`](../../human).
+
+Access rule: coding agents must not read or modify it without explicit user approval. See [`docs/conventions/design-principles.md`](../conventions/design-principles.md).

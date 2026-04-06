@@ -13,6 +13,7 @@ This file is an index for coding agents. The canonical project manual lives unde
 
 ## Hard Constraints
 
+- Use uv for all python
 - Keep `README.md`, `AGENTS.md`, and `CLAUDE.md` aligned with the actual architecture.
 - Keep `AGENTS.md` and `CLAUDE.md` as exact mirrors of each other.
 - Treat `docs/` as canonical shared documentation.

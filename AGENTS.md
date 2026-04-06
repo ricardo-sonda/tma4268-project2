@@ -9,6 +9,7 @@ This file is an index for coding agents. The canonical project manual lives unde
 - [`docs/workflows/iteration.md`](docs/workflows/iteration.md)
 - [`docs/workflows/evaluation.md`](docs/workflows/evaluation.md)
 - [`docs/reference/commands.md`](docs/reference/commands.md)
+- [`docs/workflows/drift-repair.md`](docs/workflows/drift-repair.md)
 
 ## Hard Constraints
 

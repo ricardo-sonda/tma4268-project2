@@ -1,4 +1,6 @@
-# UFC Dataset Column Tracker
+# Raw UFC Master Column Tracker
+
+This page tracks `data/raw/ultimate-ufc/ufc-master.csv`.
 
 6528 rows, 118 columns. Mark columns KEEP or DROP.
 
@@ -234,5 +236,4 @@
 | 109 | FinishRound        | DROP   | float | 622   | leakage |
 | 110 | FinishRoundTime    | DROP   | str   | 622   | leakage |
 | 111 | TotalFightTimeSecs | DROP   | float | 622   | leakage |
-
 

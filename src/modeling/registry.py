@@ -1,15 +1,15 @@
 """Registry of available model classes."""
 
-from src.modeling.logistic_educational import LogiticEducationalModel
-from src.modeling.naive import NaiveModel
 from .logistic_diff_only import LogisticDiffOnlyModel
+from .logistic_educational import LogisticEducationalModel
 from .logistic_ground_zero import LogisticGroundZeroModel
 from .logistic_scratch_diff_only import LogisticScratchDiffOnlyModel
+from .naive import NaiveModel
 
 MODEL_CLASSES = {
     # LogisticDiffOnlyModel.name: LogisticDiffOnlyModel,
     LogisticGroundZeroModel.name: LogisticGroundZeroModel,
     # LogisticScratchDiffOnlyModel.name: LogisticScratchDiffOnlyModel,
-    LogiticEducationalModel.name: LogiticEducationalModel,
+    LogisticEducationalModel.name: LogisticEducationalModel,
     NaiveModel.name: NaiveModel,
 }

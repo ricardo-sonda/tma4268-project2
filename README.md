@@ -1,4 +1,4 @@
-# ccds-ufc
+# TMA4268 Project 2
 
 UFC outcome prediction project for TMA4268 Statistical Learning.
 

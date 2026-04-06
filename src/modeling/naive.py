@@ -1,7 +1,9 @@
+"""Baseline model that always predicts 0.5."""
+
 import numpy as np
 
-from src.features import ground_zero_feature_set
-from src.modeling.base import BaseModel
+from ..features import ground_zero_feature_set
+from .base import BaseModel
 
 
 class NaiveModel(BaseModel):

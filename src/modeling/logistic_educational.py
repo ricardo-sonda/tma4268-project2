@@ -1,13 +1,16 @@
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
+"""Logistic regression on a small educational diff-only feature subset."""
 
-from src.features import diff_only_feature_set
-from src.modeling.base import BaseModel
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import MinMaxScaler
+
+import numpy as np
+
+from ..features import diff_only_feature_set
+from .base import BaseModel
 
 
-class LogiticEducationalModel(BaseModel):
+class LogisticEducationalModel(BaseModel):
     name = "logistic_educational"
 
     def __init__(self) -> None:
@@ -34,8 +37,3 @@ class LogiticEducationalModel(BaseModel):
     def predict_proba(self, X) -> np.ndarray:
         X = X[self.active_feature_names]
         return self.pipeline.predict_proba(X)[:, 1]
-
-
-if __name__ == "__main__":
-    model = LogiticEducationalModel()
-    print(model.active_feature_names)
