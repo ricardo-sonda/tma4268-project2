@@ -86,7 +86,14 @@ def plot_one_model(model_name: str, model_cls: type) -> Path:
         gridspec_kw={"height_ratios": (112, 180, 112), "hspace": 0.08},
     )
 
-    ax_top.bar(centers, correct_c, width=widths, color="#2ca02c", edgecolor="none", align="center")
+    ax_top.bar(
+        centers,
+        correct_c,
+        width=widths,
+        color="#2ca02c",
+        edgecolor="none",
+        align="center",
+    )
     ax_top.set_ylabel("Correct\n(count)", fontsize=9)
     ax_top.set_title(f"{model_name}  ·  test n={len(prob_s)}")
     ax_top.tick_params(axis="x", labelbottom=False)
@@ -99,7 +106,14 @@ def plot_one_model(model_name: str, model_cls: type) -> Path:
     ax_mid.legend(loc="upper right", framealpha=0.9)
     ax_mid.tick_params(axis="x", labelbottom=False)
 
-    ax_bot.bar(centers, wrong_c, width=widths, color="#d62728", edgecolor="none", align="center")
+    ax_bot.bar(
+        centers,
+        wrong_c,
+        width=widths,
+        color="#d62728",
+        edgecolor="none",
+        align="center",
+    )
     ax_bot.set_ylabel("Failed\n(count)", fontsize=9)
     ax_bot.set_xlabel("Fights (sorted by predicted probability, high to low)")
 
