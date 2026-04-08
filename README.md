@@ -21,6 +21,7 @@ make sql
 make plots
 make evaluate
 make evaluate MODEL=logistic_ground_zero
+make tui
 ```
 
 Canonical command descriptions live in [`docs/reference/commands.md`](docs/reference/commands.md).

@@ -56,6 +56,21 @@ Responsibilities:
 
 Evaluation must stay external to the models.
 
+### `src/tui.py`
+
+Responsibilities:
+- provide a stateless terminal UI for launching model evaluation
+- inspect the current evaluation artifacts already written under `reports/`
+- show available models even when no current evaluation outputs exist
+
+The TUI is a frontend over the existing evaluation workflow, not a separate run-tracking system.
+
+### `src/list_features.py`
+
+Responsibilities:
+- print the columns produced by a named feature set
+- make feature-set inspection available as a small direct CLI entrypoint
+
 ### `src/plots.py`
 
 Responsibilities:

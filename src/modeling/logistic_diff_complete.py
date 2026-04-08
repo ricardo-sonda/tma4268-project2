@@ -1,28 +1,18 @@
-"""Logistic regression on a small educational complete-case diff subset."""
+"""Complete-case logistic regression on diff features."""
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
 
-import numpy as np
-
 from ..features import diff_complete_feature_set
 from .base import BaseModel
 
 
-class LogisticEducationalModel(BaseModel):
-    name = "logistic_educational"
+class LogisticDiffCompleteModel(BaseModel):
+    name = "logistic_diff_complete"
 
     def __init__(self) -> None:
         self.feature_builder = diff_complete_feature_set
-        self.active_feature_names = [
-            "AgeDiff",
-            "CurrentLoseStreakDiff",
-            "CurrentWinStreakDiff",
-            "HeightCmsDiff",
-            "ReachCmsDiff",
-            "WeightLbsDiff",
-        ]
         self.pipeline = Pipeline(
             [
                 ("scale", MinMaxScaler()),
@@ -31,9 +21,7 @@ class LogisticEducationalModel(BaseModel):
         )
 
     def fit(self, X, y) -> None:
-        X = X[self.active_feature_names]
         self.pipeline.fit(X, y)
 
-    def predict_proba(self, X) -> np.ndarray:
-        X = X[self.active_feature_names]
+    def predict_proba(self, X):
         return self.pipeline.predict_proba(X)[:, 1]

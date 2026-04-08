@@ -1,22 +1,22 @@
-"""Logistic regression using only corner-difference fighter features."""
+"""Complete-case logistic regression with weight-class interactions."""
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler
 
-from ..features import diff_only_feature_set
+from ..features import weightclass_interaction_complete_feature_set
 from .base import BaseModel
 
 
-class LogisticDiffOnlyModel(BaseModel):
-    name = "logistic_diff_only"
+class LogisticWeightclassInteractionCompleteModel(BaseModel):
+    name = "logistic_weightclass_interaction_complete"
 
     def __init__(self) -> None:
-        self.feature_builder = diff_only_feature_set
+        self.feature_builder = weightclass_interaction_complete_feature_set
         self.pipeline = Pipeline(
             [
                 ("scale", MinMaxScaler()),
-                ("model", LogisticRegression(max_iter=2000, random_state=42)),
+                ("model", LogisticRegression(max_iter=4000, random_state=42)),
             ]
         )
 

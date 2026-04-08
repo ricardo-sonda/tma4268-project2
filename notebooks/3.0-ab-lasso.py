@@ -1,4 +1,4 @@
-"""LASSO feature selection on the diff-only feature set.
+"""LASSO feature selection on the complete-case diff feature set.
 
 Uses L1-penalized logistic regression across a range of regularization
 strengths to identify which diff features carry signal for predicting
@@ -20,7 +20,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from src.evaluation import chronological_split
-from src.features import diff_only_feature_set
+from src.features import diff_complete_feature_set
 
 REPORTS_DIR = REPO_ROOT / "reports" / "figures" / "lasso"
 COEF_PATH_PLOT = REPORTS_DIR / "lasso-coefficient-paths.png"
@@ -31,7 +31,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 
 
 def build_data():
-    dataset = diff_only_feature_set()
+    dataset = diff_complete_feature_set()
     X_train, X_test, y_train, y_test, _, metadata_test = chronological_split(
         dataset.X, dataset.y, dataset.metadata
     )
@@ -118,7 +118,7 @@ def save_selected_features_plot(feature_names, coefs):
 
 X_train, X_test, y_train, y_test, metadata_test, feature_names = build_data()
 
-print(f"Total diff-only features: {len(feature_names)}")
+print(f"Total complete-case diff features: {len(feature_names)}")
 print(f"Train: {len(X_train)}, Test: {len(X_test)}")
 
 C_values = np.logspace(-3, 2, 80)

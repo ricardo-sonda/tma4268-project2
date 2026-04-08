@@ -37,6 +37,9 @@ That means:
 - `make evaluate MODEL=<model_name>`
   - evaluates one registered model
 
+- `make tui`
+  - opens the stateless Textual interface for selecting models, launching evaluation, and inspecting the current outputs in `reports/`
+
 - `make logistic-ground-zero`
   - evaluates the current logistic ground-zero model directly
 
@@ -51,3 +54,5 @@ That means:
 - `uv run python -m src.plots all`
 - `uv run python -m src.modeling.run all`
 - `uv run python -m src.modeling.run logistic_ground_zero`
+- `uv run python -m src.tui`
+- `uv run python -m src.list_features <feature_set>`

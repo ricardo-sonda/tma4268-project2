@@ -19,7 +19,8 @@ This is the intended workflow when you want to change what information a model s
 2. Look at the cleaned baseline dataset in [`data/interim/ultimate-ufc/ufc-clean.csv`](../../data/interim/ultimate-ufc/ufc-clean.csv).
 3. Add a new feature-builder function.
 4. Return a `PreparedDataset`.
-5. Do not put the feature engineering inside an individual model file.
+5. Follow the feature-set naming and missing-data contract in [`docs/architecture/data-flow.md`](../architecture/data-flow.md).
+6. Do not put the feature engineering inside an individual model file.
 
 If adding a feature set requires edits far outside `src/features.py`, that is usually a sign of drift.
 
@@ -30,7 +31,7 @@ This is the intended workflow when you want to change the algorithm.
 1. Add one new file under [`src/modeling/`](../../src/modeling).
 2. Subclass [`BaseModel`](../../src/modeling/base.py).
 3. Import the feature-builder function the model should use.
-4. Implement `fit`.
+4. Handle imputation in the model pipeline unless you are intentionally using an explicit `_complete` feature set.
 5. Implement `predict_proba`.
 6. Register the model class in [`src/modeling/registry.py`](../../src/modeling/registry.py).
 
@@ -50,6 +51,7 @@ It should not become the main place for data cleaning or evaluation logic.
 - `make plots`
 - `make evaluate`
 - `make evaluate MODEL=<model_name>`
+- `make tui`
 
 Canonical command descriptions live in [`docs/reference/commands.md`](../reference/commands.md).
 

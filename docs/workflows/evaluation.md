@@ -49,6 +49,13 @@ Evaluation writes:
 - per-fight prediction CSVs under `reports/predictions/`
 - ROC comparison plots under `reports/figures/evaluation/`
 
+The terminal UI in [`src/tui.py`](../../src/tui.py) reads those current artifacts directly.
+
+It is intentionally stateless:
+- it does not create a separate run-history abstraction
+- it shows the currently available models even if no outputs exist yet
+- launching evaluation from the TUI rewrites the same standardized outputs
+
 ## Bookmaker Benchmark
 
 Bookmaker implied probabilities are always evaluated on the same test split as the model.

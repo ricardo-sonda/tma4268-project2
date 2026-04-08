@@ -22,7 +22,9 @@ Your job is to restore alignment between:
 
 Do not treat this file as the sole source of truth. Use it as a procedure for discovering the current canonical truth of the repository.
 
-By default, execute this workflow as one coordinating agent plus multiple narrow sub-agents working in parallel.
+By default, execute this workflow as one coordinating agent plus multiple narrow sub-agents working in parallel when that capability is available.
+
+If sub-agents are unavailable in the current environment, keep the same disjoint audit slices and emulate them locally with parallel or sequential passes.
 
 ## Source Of Truth Order
 
@@ -42,11 +44,12 @@ If code and canonical docs disagree, prefer refactoring the repository back towa
 
 1. Read the top-level indexes and the canonical docs they point to.
 2. Build a mental model of the intended architecture, workflows, and documentation rules.
-3. Decide the audit slices and spawn sub-agents with disjoint scopes.
-4. While sub-agents run, inspect the repository structure, code layout, and Makefile entrypoints locally.
-5. Collect the sub-agent findings.
-6. Compare the actual repository against the intended design.
-7. Fix drift wherever it appears, including:
+3. Decide the audit slices and assign disjoint scopes.
+4. If sub-agents are available, spawn them. Otherwise execute the same slices locally without overlapping scopes.
+5. While those audit slices run, inspect the repository structure, code layout, and Makefile entrypoints locally.
+6. Collect the findings.
+7. Compare the actual repository against the intended design.
+8. Fix drift wherever it appears, including:
    - code drift
    - documentation drift
    - link drift
@@ -54,8 +57,8 @@ If code and canonical docs disagree, prefer refactoring the repository back towa
    - workflow drift
    - duplication drift
    - drift in this workflow file
-8. Re-run the relevant project commands to verify that the repaired structure still works.
-9. Report what you found, what you changed, and any remaining ambiguity.
+9. Re-run the relevant project commands to verify that the repaired structure still works.
+10. Report what you found, what you changed, and any remaining ambiguity.
 
 ## Parallel Execution Pattern
 
@@ -77,6 +80,8 @@ Sub-agents should:
 - report findings in a way the coordinator can integrate quickly
 
 Do not spawn sub-agents to do the same audit twice.
+
+If the environment does not support sub-agents, keep the same coordinator mindset and run the slices yourself without overlapping scopes.
 
 ## Recommended Parallel Audit Slices
 

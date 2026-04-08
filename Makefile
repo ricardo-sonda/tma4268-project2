@@ -2,7 +2,7 @@ PROJECT_NAME = src
 PYTHON = uv run python
 MODEL ?= all
 
-.PHONY: data refresh-data sql plots evaluate logistic-ground-zero clean
+.PHONY: data refresh-data sql plots evaluate tui logistic-ground-zero clean
 
 data:
 	$(PYTHON) -m $(PROJECT_NAME).dataset build-all
@@ -18,6 +18,9 @@ plots:
 
 evaluate:
 	$(PYTHON) -m $(PROJECT_NAME).modeling.run $(MODEL)
+
+tui:
+	$(PYTHON) -m $(PROJECT_NAME).tui
 
 logistic-ground-zero:
 	$(PYTHON) -m $(PROJECT_NAME).modeling.run logistic_ground_zero

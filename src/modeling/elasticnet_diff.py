@@ -1,8 +1,4 @@
-"""ElasticNet logistic regression with interaction terms on diff features.
-
-Uses diff_imputed_feature_set (all 6,275 rows). Median-imputes NaNs in the
-pipeline so sklearn can handle the missing striking/grappling stats.
-"""
+"""ElasticNet logistic regression with interaction terms on the default diff set."""
 
 import numpy as np
 from sklearn.impute import SimpleImputer
@@ -10,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, PolynomialFeatures
 
-from ..features import diff_imputed_feature_set
+from ..features import diff_feature_set
 from .base import BaseModel
 
 # Strongest diff predictors (by correlation magnitude with target).
@@ -30,16 +26,23 @@ KEY_FEATURES = [
 ]
 
 
-class ElasticNetDiffOnlyModel(BaseModel):
-    name = "elasticnet_diff_only"
+class ElasticNetDiffModel(BaseModel):
+    name = "elasticnet_diff"
 
     def __init__(self) -> None:
-        self.feature_builder = diff_imputed_feature_set
+        self.feature_builder = diff_feature_set
         self.pipeline = Pipeline(
             [
                 ("impute", SimpleImputer(strategy="median")),
                 ("scale", MinMaxScaler()),
-                ("poly", PolynomialFeatures(degree=2, interaction_only=False, include_bias=False)),
+                (
+                    "poly",
+                    PolynomialFeatures(
+                        degree=2,
+                        interaction_only=False,
+                        include_bias=False,
+                    ),
+                ),
                 (
                     "model",
                     LogisticRegression(

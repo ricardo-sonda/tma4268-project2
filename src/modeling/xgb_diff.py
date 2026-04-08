@@ -1,25 +1,21 @@
-"""XGBoost gradient-boosted trees on the diff-imputed feature set.
-
-Uses diff_imputed_feature_set which preserves all 6,275 rows (no dropna).
-XGBoost handles NaN natively by learning optimal split directions for missing values.
-"""
+"""XGBoost gradient-boosted trees on the default diff feature set."""
 
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 from xgboost import XGBClassifier
 
-from ..features import diff_imputed_feature_set
+from ..features import diff_feature_set
 from .base import BaseModel
 
-CATEGORICAL_COLUMNS = ["TitleBout", "WeightClass", "Gender"]
+CATEGORICAL_COLUMNS = ["TitleBout", "Gender"]
 
 
-class XGBDiffOnlyModel(BaseModel):
-    name = "xgb_diff_only"
+class XGBDiffModel(BaseModel):
+    name = "xgb_diff"
 
     def __init__(self) -> None:
-        self.feature_builder = diff_imputed_feature_set
+        self.feature_builder = diff_feature_set
         self.label_encoders: dict[str, LabelEncoder] = {}
         self.model = XGBClassifier(
             n_estimators=300,

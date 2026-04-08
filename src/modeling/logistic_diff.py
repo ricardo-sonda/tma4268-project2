@@ -1,4 +1,4 @@
-"""Logistic regression on raw paired fighter features with in-pipeline imputation."""
+"""Logistic regression on the default diff feature set."""
 
 import numpy as np
 from sklearn.compose import ColumnTransformer, make_column_selector as selector
@@ -7,15 +7,15 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from ..features import raw_imputed_feature_set
+from ..features import diff_feature_set
 from .base import BaseModel
 
 
-class LogisticRawImputedModel(BaseModel):
-    name = "logistic_raw_imputed"
+class LogisticDiffModel(BaseModel):
+    name = "logistic_diff"
 
     def __init__(self) -> None:
-        self.feature_builder = raw_imputed_feature_set
+        self.feature_builder = diff_feature_set
         self.pipeline = Pipeline(
             [
                 (

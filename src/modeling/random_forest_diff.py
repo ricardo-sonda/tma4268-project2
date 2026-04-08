@@ -1,4 +1,4 @@
-"""Random forest on fighter-difference features with in-pipeline imputation."""
+"""Random forest on the default diff feature set."""
 
 import numpy as np
 from sklearn.compose import ColumnTransformer, make_column_selector as selector
@@ -7,15 +7,15 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
-from ..features import diff_imputed_feature_set
+from ..features import diff_feature_set
 from .base import BaseModel
 
 
-class RandomForestDiffImputedModel(BaseModel):
-    name = "random_forest_diff_imputed"
+class RandomForestDiffModel(BaseModel):
+    name = "random_forest_diff"
 
     def __init__(self) -> None:
-        self.feature_builder = diff_imputed_feature_set
+        self.feature_builder = diff_feature_set
         self.pipeline = Pipeline(
             [
                 (

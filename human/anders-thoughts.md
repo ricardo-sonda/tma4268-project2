@@ -13,4 +13,4 @@ Use kelly criterion later?
 ### Feature engineering:
 - Age in relation to Wins/Losses. Maybe this will say something. They are correlated
 - Dif-features most relevant for everything
-
+- Only Diffs would loose information. But adding the average selectively solves the problem, as they are orthogonal (so no coliniarity)

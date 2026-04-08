@@ -1,18 +1,18 @@
-"""Unregularized logistic regression fit from scratch with NumPy."""
+"""Complete-case unregularized logistic regression fit from scratch with NumPy."""
 
 from __future__ import annotations
 
 import numpy as np
 
-from ..features import diff_only_feature_set
+from ..features import diff_complete_feature_set
 from .base import BaseModel
 
 
-class LogisticScratchDiffOnlyModel(BaseModel):
-    name = "logistic_scratch_diff_only"
+class LogisticScratchDiffCompleteModel(BaseModel):
+    name = "logistic_scratch_diff_complete"
 
     def __init__(self, max_iter: int = 100, tol: float = 1e-6) -> None:
-        self.feature_builder = diff_only_feature_set
+        self.feature_builder = diff_complete_feature_set
         self.max_iter = max_iter
         self.tol = tol
         self.coefficients_: np.ndarray | None = None
