@@ -1,0 +1,55 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Dataset.}{1}{section*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Task and scope.}{1}{section*.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Practical constraint.}{2}{section*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Descriptive Data Analysis}{2}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Dataset overview}{2}{subsection.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Left: Red vs Blue win counts in the cleaned dataset (6{,}275 bouts). Red-corner fighters win 58.1\% of bouts. Right: number of bouts per year; data coverage is near-complete from 2013 onwards.}}{2}{figure.caption.5}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:class_balance}{{1}{2}{Left: Red vs Blue win counts in the cleaned dataset (6{,}275 bouts). Red-corner fighters win 58.1\% of bouts. Right: number of bouts per year; data coverage is near-complete from 2013 onwards}{figure.caption.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Summary statistics for selected difference features (\emph  {Red minus Blue}) on the full cleaned dataset ($n = 6{,}275$). Missing-value counts differ per feature because career statistics were not tracked for early bouts.}}{2}{table.caption.6}\protected@file@percent }
+\newlabel{tab:summary_stats}{{1}{2}{Summary statistics for selected difference features (\emph {Red minus Blue}) on the full cleaned dataset ($n = 6{,}275$). Missing-value counts differ per feature because career statistics were not tracked for early bouts}{table.caption.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Missingness}{3}{subsection.2.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Fraction of non-missing values per column in the raw dataset. Fighter striking and grappling averages have notably lower completeness for older bouts.}}{3}{figure.caption.7}\protected@file@percent }
+\newlabel{fig:missing_bar}{{2}{3}{Fraction of non-missing values per column in the raw dataset. Fighter striking and grappling averages have notably lower completeness for older bouts}{figure.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Correlation with outcome}{3}{subsection.2.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Pearson correlation of raw numeric columns with \texttt  {WinnerRed}. The strongest individual predictors are win-streak and total-wins differences (Red corner), all with $|r| < 0.12$.}}{4}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:corr_target}{{3}{4}{Pearson correlation of raw numeric columns with \texttt {WinnerRed}. The strongest individual predictors are win-streak and total-wins differences (Red corner), all with $|r| < 0.12$}{figure.caption.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Feature distributions by outcome}{4}{subsection.2.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Distribution of key difference features (Red minus Blue) split by outcome. Dashed lines mark zero (even matchup). Distributions overlap substantially, reflecting the difficulty of the prediction task.}}{5}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:violin}{{4}{5}{Distribution of key difference features (Red minus Blue) split by outcome. Dashed lines mark zero (even matchup). Distributions overlap substantially, reflecting the difficulty of the prediction task}{figure.caption.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Feature correlation structure}{5}{subsection.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Methods}{5}{section.3}\protected@file@percent }
+\newlabel{sec:methods}{{3}{5}{Methods}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Feature engineering: the difference representation}{5}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Data split strategy}{5}{subsection.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Model 1: Logistic Regression (baseline)}{6}{subsection.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Model 2: Elastic Net Logistic Regression (penalised, tuned)}{6}{subsection.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Model 3: Random Forest}{6}{subsection.3.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Model 4: Gradient Boosted Trees (XGBoost)}{6}{subsection.3.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Evaluation metrics}{7}{subsection.3.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Results and Interpretation}{7}{section.4}\protected@file@percent }
+\newlabel{sec:results}{{4}{7}{Results and Interpretation}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Model performance}{7}{subsection.4.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Test-set evaluation results (chronological holdout, $n_{\text  {test}} = 1{,}255$).}}{7}{table.caption.10}\protected@file@percent }
+\newlabel{tab:results}{{2}{7}{Test-set evaluation results (chronological holdout, $n_{\text {test}} = 1{,}255$)}{table.caption.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Confusion matrices and class-level behaviour}{7}{subsection.4.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Confusion matrix entries and precision/recall on the test set ($n = 1{,}255$; 717 Red wins, 538 Blue wins). Precision and recall are reported for the Red-wins class (positive class).}}{8}{table.caption.11}\protected@file@percent }
+\newlabel{tab:cm}{{3}{8}{Confusion matrix entries and precision/recall on the test set ($n = 1{,}255$; 717 Red wins, 538 Blue wins). Precision and recall are reported for the Red-wins class (positive class)}{table.caption.11}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}ROC curves}{8}{subsection.4.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces ROC curves for the Random Forest model versus the bookmaker baseline on the test set. The bookmaker (AUC = 0.743) substantially outperforms the best statistical model (AUC = 0.693).}}{8}{figure.caption.12}\protected@file@percent }
+\newlabel{fig:roc}{{5}{8}{ROC curves for the Random Forest model versus the bookmaker baseline on the test set. The bookmaker (AUC = 0.743) substantially outperforms the best statistical model (AUC = 0.693)}{figure.caption.12}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Coefficient interpretation (Elastic Net)}{8}{subsection.4.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Top 8 Elastic Net coefficients (sorted by $|\hat  {\beta }|$). The Lasso component zeroed out 5 features; the remaining 21 are listed in the full CSV at \texttt  {reports/metrics/elasticnet\_nested\_cv\_diff\_coefficients.csv}.}}{9}{table.caption.13}\protected@file@percent }
+\newlabel{tab:coefs}{{4}{9}{Top 8 Elastic Net coefficients (sorted by $|\hat {\beta }|$). The Lasso component zeroed out 5 features; the remaining 21 are listed in the full CSV at \texttt {reports/metrics/elasticnet\_nested\_cv\_diff\_coefficients.csv}}{table.caption.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Feature importance (Random Forest)}{9}{subsection.4.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Random Forest feature importances (mean decrease in impurity) for the top 20 features. \texttt  {AgeDiff} dominates; grappling and striking averages follow.}}{9}{figure.caption.14}\protected@file@percent }
+\newlabel{fig:rf_importance}{{6}{9}{Random Forest feature importances (mean decrease in impurity) for the top 20 features. \texttt {AgeDiff} dominates; grappling and striking averages follow}{figure.caption.14}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Bias-variance discussion}{10}{subsection.4.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.7}Limitations}{10}{subsection.4.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}Summary}{10}{section.5}\protected@file@percent }
+\gdef \@abspage@last{10}

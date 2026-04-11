@@ -111,16 +111,117 @@ def plot_correlations() -> None:
     plt.close()
 
 
+def plot_feature_importances(model_name: str, importances: pd.Series) -> None:
+    """Save a horizontal bar chart of feature importances."""
+    output_dir = FIGURES_DIR / "feature_importance"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    top = importances.sort_values(ascending=False).head(20)
+    fig, ax = plt.subplots(figsize=(8, 6))
+    colors = sns.color_palette("Blues_r", len(top))
+    top.plot.barh(ax=ax, color=colors[::-1])
+    ax.invert_yaxis()
+    ax.set_xlabel("Importance", fontsize=11)
+    ax.set_title(f"Feature Importances — {model_name}", fontsize=12)
+    ax.tick_params(labelsize=8)
+    plt.tight_layout()
+    plt.savefig(output_dir / f"{model_name}_importance.png", dpi=150)
+    plt.close()
+
+
+def plot_class_balance_and_timeline() -> None:
+    """Bar chart of Red/Blue win counts and bout count per year."""
+    from .features import load_ground_zero_frame
+
+    output_dir = FIGURES_DIR / "eda"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    frame = load_ground_zero_frame()
+
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+
+    # Class balance
+    counts = frame["Winner"].value_counts().reindex(["Red", "Blue"])
+    axes[0].bar(counts.index, counts.values, color=["firebrick", "steelblue"], width=0.5)
+    axes[0].set_title("Win counts by corner", fontsize=12)
+    axes[0].set_ylabel("Number of bouts")
+    for i, (label, val) in enumerate(zip(counts.index, counts.values)):
+        axes[0].text(i, val + 20, f"{val}\n({val/len(frame)*100:.1f}%)",
+                     ha="center", va="bottom", fontsize=10)
+
+    # Bouts per year
+    frame["Year"] = frame["EventDate"].dt.year
+    yearly = frame.groupby("Year").size()
+    axes[1].bar(yearly.index, yearly.values, color="steelblue")
+    axes[1].set_title("Bouts per year", fontsize=12)
+    axes[1].set_xlabel("Year")
+    axes[1].set_ylabel("Number of bouts")
+    axes[1].tick_params(axis="x", rotation=45)
+
+    plt.tight_layout()
+    plt.savefig(output_dir / "class_balance_timeline.png", dpi=150)
+    plt.close()
+
+
+def plot_outcome_feature_violin() -> None:
+    """Violin plots of key diff features split by fight outcome."""
+    from .features import diff_feature_set
+
+    output_dir = FIGURES_DIR / "eda"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    ds = diff_feature_set()
+    plot_frame = ds.X.copy()
+    plot_frame["Outcome"] = ds.y.map({1: "Red wins", 0: "Blue wins"})
+
+    features = [
+        "CurrentWinStreakDiff",
+        "AgeDiff",
+        "ReachCmsDiff",
+        "AvgSigStrPctDiff",
+        "AvgTDLandedDiff",
+        "LossesDiff",
+    ]
+    features = [f for f in features if f in plot_frame.columns]
+
+    fig, axes = plt.subplots(2, 3, figsize=(13, 7))
+    axes = axes.flatten()
+
+    palette = {"Red wins": "firebrick", "Blue wins": "steelblue"}
+    for ax, feat in zip(axes, features):
+        data = plot_frame[[feat, "Outcome"]].dropna()
+        sns.violinplot(
+            data=data, x="Outcome", y=feat,
+            hue="Outcome", palette=palette, legend=False, ax=ax,
+            inner="quartile", linewidth=0.8,
+        )
+        ax.set_title(feat, fontsize=10)
+        ax.set_xlabel("")
+        ax.tick_params(labelsize=8)
+        ax.axhline(0, color="black", linewidth=0.6, linestyle="--")
+
+    plt.suptitle("Key difference features by fight outcome", fontsize=12, y=1.01)
+    plt.tight_layout()
+    plt.savefig(output_dir / "feature_violin_by_outcome.png", dpi=150, bbox_inches="tight")
+    plt.close()
+
+
 def plot_all() -> None:
     if not UFC_MASTER_CSV.exists():
         raise FileNotFoundError(f"{UFC_MASTER_CSV} not found. Run the data pipeline first.")
     plot_missingness()
     plot_correlations()
+    plot_class_balance_and_timeline()
+    plot_outcome_feature_violin()
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate UFC plots.")
-    parser.add_argument("command", choices=["all", "missing", "correlation"])
+    parser.add_argument(
+        "command",
+        choices=["all", "missing", "correlation", "eda", "feature-importance"],
+    )
+    parser.add_argument("--model", default=None, help="Model name for feature-importance command")
     return parser.parse_args(argv)
 
 
@@ -130,6 +231,30 @@ def main(argv: list[str] | None = None) -> int:
         plot_missingness()
     elif args.command == "correlation":
         plot_correlations()
+    elif args.command == "eda":
+        plot_class_balance_and_timeline()
+        plot_outcome_feature_violin()
+    elif args.command == "feature-importance":
+        if args.model is None:
+            raise SystemExit("--model is required for feature-importance command")
+        # Dynamically import to avoid hard dependency at module level
+        from .modeling.registry import MODEL_CLASSES
+        from .evaluation import chronological_split
+
+        model_cls = MODEL_CLASSES[args.model]
+        model = model_cls()
+        ds = model.feature_builder()
+        X_train, _, y_train, _, _, _ = chronological_split(ds.X, ds.y, ds.metadata)
+        model.fit(X_train, y_train)
+
+        rf_step = model.pipeline.named_steps.get("model")
+        if rf_step is None or not hasattr(rf_step, "feature_importances_"):
+            raise SystemExit(f"Model {args.model!r} does not expose feature_importances_")
+
+        prep = model.pipeline.named_steps["prep"]
+        names = prep.get_feature_names_out()
+        importances = pd.Series(rf_step.feature_importances_, index=names)
+        plot_feature_importances(args.model, importances)
     else:
         plot_all()
     return 0

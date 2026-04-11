@@ -12,7 +12,17 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from sklearn.metrics import accuracy_score, brier_score_loss, log_loss, roc_auc_score, roc_curve
+from sklearn.metrics import (
+    accuracy_score,
+    brier_score_loss,
+    confusion_matrix,
+    f1_score,
+    log_loss,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+    roc_curve,
+)
 
 from .config import FIGURES_DIR, METRICS_DIR, PREDICTIONS_DIR
 from .modeling.base import BaseModel
@@ -34,6 +44,9 @@ class EvaluationSummary:
     bookmaker_brier: float
     roc_auc: float
     bookmaker_roc_auc: float
+    precision: float = 0.0
+    recall: float = 0.0
+    f1: float = 0.0
 
 
 def chronological_split(
@@ -82,11 +95,15 @@ def evaluate_model(model: BaseModel) -> EvaluationSummary:
         bookmaker_brier=brier_score_loss(y_test, bookmaker_prob),
         roc_auc=roc_auc_score(y_test, model_prob),
         bookmaker_roc_auc=roc_auc_score(y_test, bookmaker_prob),
+        precision=precision_score(y_test, model_pred, zero_division=0),
+        recall=recall_score(y_test, model_pred, zero_division=0),
+        f1=f1_score(y_test, model_pred, zero_division=0),
     )
 
     save_predictions(model.name, y_test, metadata_test, model_prob, bookmaker_prob)
     save_summary(summary)
     save_roc_plot(model.name, y_test, model_prob, bookmaker_prob)
+    save_confusion_matrix_plot(model.name, y_test, model_pred)
     print_summary(summary)
     return summary
 
@@ -144,6 +161,64 @@ def save_roc_plot(
     plt.close()
 
 
+def save_confusion_matrix_plot(
+    model_name: str,
+    y_test: pd.Series,
+    model_pred: np.ndarray,
+) -> None:
+    output_dir = FIGURES_DIR / "evaluation"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    cm = confusion_matrix(y_test, model_pred)
+    labels = ["Blue wins\n(pred)", "Red wins\n(pred)"]
+    tick_labels = ["Blue wins\n(actual)", "Red wins\n(actual)"]
+
+    fig, ax = plt.subplots(figsize=(5, 4))
+    im = ax.imshow(cm, interpolation="nearest", cmap="Blues")
+    fig.colorbar(im, ax=ax)
+    ax.set_xticks([0, 1])
+    ax.set_yticks([0, 1])
+    ax.set_xticklabels(labels, fontsize=9)
+    ax.set_yticklabels(tick_labels, fontsize=9)
+    ax.set_xlabel("Predicted label", fontsize=10)
+    ax.set_ylabel("True label", fontsize=10)
+    ax.set_title(f"Confusion Matrix — {model_name}", fontsize=10)
+
+    thresh = cm.max() / 2.0
+    for i in range(2):
+        for j in range(2):
+            ax.text(
+                j, i, str(cm[i, j]),
+                ha="center", va="center",
+                color="white" if cm[i, j] > thresh else "black",
+                fontsize=13, fontweight="bold",
+            )
+
+    plt.tight_layout()
+    plt.savefig(output_dir / f"{model_name}_cm.png", dpi=150)
+    plt.close()
+
+
+def save_coefficients_csv(model_name: str, coefficients: pd.Series) -> None:
+    """Save a model's named coefficients as a CSV under reports/metrics/."""
+    METRICS_DIR.mkdir(parents=True, exist_ok=True)
+    df = pd.DataFrame({"feature": coefficients.index, "coefficient": coefficients.values})
+    df.to_csv(METRICS_DIR / f"{model_name}_coefficients.csv", index=False)
+
+
+def save_confusion_matrix_plots_from_predictions() -> None:
+    """Generate confusion matrix plots from saved prediction CSVs (no refit needed)."""
+    if not PREDICTIONS_DIR.exists():
+        return
+    for csv_path in sorted(PREDICTIONS_DIR.glob("*.csv")):
+        df = pd.read_csv(csv_path)
+        save_confusion_matrix_plot(
+            csv_path.stem,
+            df["WinnerRed"],
+            df["ModelPredRed"].to_numpy(),
+        )
+
+
 def print_summary(summary: EvaluationSummary) -> None:
     print("=" * 60)
     print(f"Model: {summary.model_name}")
@@ -160,6 +235,9 @@ def print_summary(summary: EvaluationSummary) -> None:
     print(f"Bookmaker Brier score: {summary.bookmaker_brier:.4f}")
     print(f"Model ROC AUC:         {summary.roc_auc:.4f}")
     print(f"Bookmaker ROC AUC:     {summary.bookmaker_roc_auc:.4f}")
+    print(f"Model precision:       {summary.precision:.4f}")
+    print(f"Model recall:          {summary.recall:.4f}")
+    print(f"Model F1:              {summary.f1:.4f}")
 
 
 def _delta_cell(model_val: float, book_val: float, lower_is_better: bool) -> Text:

@@ -1,0 +1,563 @@
+% UFC Fight Winner Prediction — TMA4268 Compulsory Exercise 2
+
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\emergencystretch=3em
+
+\title{Predicting UFC Fight Outcomes Using Pre-Fight Fighter Statistics\\
+\large Compulsory Exercise 2 --- TMA4268 Statistical Learning V2026}
+\author{Ricardo Sonda Guiraudeli}
+\date{April 2026}
+
+\begin{document}
+
+\maketitle
+
+%% -------------------------------------------------------------------------
+\section*{Abstract}
+%% -------------------------------------------------------------------------
+
+We address the problem of predicting the winner of a UFC mixed martial arts
+fight from pre-fight statistics only.
+The target is a binary outcome: whether the fighter assigned to the Red
+corner wins (\texttt{WinnerRed} = 1) or loses (\texttt{WinnerRed} = 0).
+The dataset is the \emph{Ultimate UFC Dataset} sourced from Kaggle
+(\texttt{mdabbert/ultimate-ufc-dataset}), containing 6{,}528 bouts between
+March 2010 and December 2024 with per-fighter cumulative statistics recorded
+at fight time.
+
+We construct \emph{difference features} --- each numeric statistic is
+replaced by its Red-minus-Blue signed difference --- to make the feature
+space matchup-symmetric and reduce dimensionality from 118 to 26 predictors.
+Three model families are compared: penalised logistic regression (Elastic
+Net, tuned with nested cross-validation), a Random Forest ensemble, and
+gradient-boosted trees (XGBoost).
+All models are evaluated on a chronological 80/20 holdout split to prevent
+time leakage, and benchmarked against the bookmaker-implied win probability
+derived from pre-fight betting odds.
+
+The bookmaker baseline achieves an accuracy of 69.6\% and a ROC AUC of
+0.743.
+Our best-performing model, the Random Forest, reaches an accuracy of 63.6\%
+and a ROC AUC of 0.693.
+The gap to the bookmaker confirms that publicly available fighter statistics
+contain real predictive signal but fall well short of the full information
+encoded in market odds.
+Among observable predictors, average takedown-landed difference, reach
+advantage, and win-streak difference emerge as the strongest predictors of
+fight outcome, while a negative age coefficient reveals that older Red-corner
+fighters tend to underperform relative to the prediction.
+
+%% -------------------------------------------------------------------------
+\section{Introduction}
+%% -------------------------------------------------------------------------
+
+Mixed martial arts (MMA) is one of the fastest-growing combat sports
+globally, and the UFC is its premier organisation.
+Each fight is a highly complex event influenced by physical attributes,
+technical skills, recent form, and matchup dynamics.
+Predicting fight outcomes is a canonical classification problem: given
+observable pre-fight information about both fighters, can we assign a
+probability that the Red-corner fighter wins?
+
+\paragraph{Dataset.}
+We use the \emph{Ultimate UFC Dataset} published by user \texttt{mdabbert}
+on Kaggle (\texttt{mdabbert/ultimate-ufc-dataset}).
+The dataset records 6{,}528 bouts with 118 raw columns, including
+per-fighter cumulative career statistics (wins, losses, streaks, striking
+and grappling averages, physical measurements), contextual fight information
+(weight class, number of rounds, gender), and bookmaker moneyline odds.
+After filtering to bouts with a decisive Red or Blue winner and dropping
+pre-computed difference columns provided by the source, we retain 6{,}275
+bouts for analysis.
+
+\paragraph{Task and scope.}
+Our goal is to build a classifier that, given only pre-fight information,
+assigns a calibrated probability of a Red-corner victory.
+We benchmark every model against bookmaker-implied probabilities --- a
+near-market-efficient baseline that absorbs information beyond public
+statistics.
+The intended audience is a sports analytics practitioner who wants to
+understand which statistical learning method extracts the most signal from
+observable fighter data, and which pre-fight features drive predictions.
+
+\paragraph{Practical constraint.}
+Because betting-odds leakage would trivially dominate any model, odds-derived
+columns are excluded from all feature sets; the odds appear only as a
+benchmark in evaluation.
+
+%% -------------------------------------------------------------------------
+\section{Descriptive Data Analysis}
+%% -------------------------------------------------------------------------
+
+\subsection{Dataset overview}
+
+After cleaning, the dataset contains 6{,}275 bouts spanning March 2010 to
+December 2024.
+The outcome is moderately imbalanced: 58.1\% of bouts result in a Red-corner
+victory, as shown in Figure~\ref{fig:class_balance}.
+This imbalance reflects the UFC's convention of assigning the Red corner to
+champions and higher-ranked fighters, who naturally win more often.
+Table~\ref{tab:summary_stats} summarises the key numeric predictors used in
+modelling.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../figures/eda/class_balance_timeline.png}
+\caption{Left: Red vs Blue win counts in the cleaned dataset (6{,}275 bouts).
+Red-corner fighters win 58.1\% of bouts.
+Right: number of bouts per year; data coverage is near-complete from 2013
+onwards.}
+\label{fig:class_balance}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Summary statistics for selected difference features
+(\emph{Red minus Blue}) on the full cleaned dataset ($n = 6{,}275$).
+Missing-value counts differ per feature because career statistics were
+not tracked for early bouts.}
+\label{tab:summary_stats}
+\begin{tabular}{lrrrr}
+\toprule
+Feature & Mean & Std & Min & Max \\
+\midrule
+\texttt{AgeDiff}               &  0.56 & 5.18 & $-16.0$ & 17.0 \\
+\texttt{ReachCmsDiff}          &  0.23 & 8.62 & $-30.5$ & 188.0 \\
+\texttt{CurrentWinStreakDiff}  &  0.14 & 1.87 & $-10.0$ & 18.0 \\
+\texttt{CurrentLoseStreakDiff} &  0.12 & 1.01 & $-5.0$  & 6.0 \\
+\texttt{AvgSigStrLandedDiff}   &  0.32 & 17.4 & $-128.2$ & 104.7 \\
+\texttt{AvgSigStrPctDiff}      &  0.01 & 0.14 & $-0.57$ & 0.82 \\
+\texttt{AvgTDLandedDiff}       &  0.09 & 1.79 & $-10.9$ & 11.0 \\
+\texttt{WinsDiff}              &  1.49 & 4.17 & $-23.0$ & 28.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The near-zero means for the difference features are expected: the UFC
+broadly matches fighters of comparable ability, so the average edge is
+close to zero.
+The positive mean for \texttt{WinsDiff} (1.49) and \texttt{AgeDiff} (0.56)
+reflects the Red-corner assignment policy: Red fighters tend to have
+slightly more career wins and are slightly older.
+
+\subsection{Missingness}
+
+Many career-statistics columns have substantial missing values for early
+bouts where tracking was incomplete.
+Figure~\ref{fig:missing_bar} shows the completeness rate per column.
+The \emph{diff} feature set strategy (Section~\ref{sec:methods}) retains
+all rows and delegates imputation to the model pipeline.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{../figures/missing/missing_bar.png}
+\caption{Fraction of non-missing values per column in the raw dataset.
+Fighter striking and grappling averages have notably lower completeness
+for older bouts.}
+\label{fig:missing_bar}
+\end{figure}
+
+\subsection{Correlation with outcome}
+
+Figure~\ref{fig:corr_target} shows the Pearson correlation of each numeric
+raw column with the binary outcome \texttt{WinnerRed}.
+Correlations are modest ($|r| < 0.12$), confirming that no single feature
+is strongly predictive on its own.
+Win streak, cumulative wins, and significant-strike statistics show the
+highest marginal associations.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{../figures/correlation/corr_with_winner.png}
+\caption{Pearson correlation of raw numeric columns with \texttt{WinnerRed}.
+The strongest individual predictors are win-streak and total-wins
+differences (Red corner), all with $|r| < 0.12$.}
+\label{fig:corr_target}
+\end{figure}
+
+\subsection{Feature distributions by outcome}
+
+Figure~\ref{fig:violin} shows violin plots of the six most important
+difference features split by fight outcome.
+The distributions largely overlap, which is consistent with the low
+individual correlations.
+The signal is subtle: in Red-win fights the win-streak and reach
+distributions shift slightly upward, confirming a real but weak effect.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{../figures/eda/feature_violin_by_outcome.png}
+\caption{Distribution of key difference features (Red minus Blue) split
+by outcome. Dashed lines mark zero (even matchup). Distributions overlap
+substantially, reflecting the difficulty of the prediction task.}
+\label{fig:violin}
+\end{figure}
+
+\subsection{Feature correlation structure}
+
+Red and Blue fighter statistics are highly internally correlated (e.g.,
+wins is correlated with win streak and total rounds fought).
+This motivates using difference features to compress correlated Red/Blue
+column pairs into a single signed quantity, reducing multicollinearity in
+linear models.
+
+%% -------------------------------------------------------------------------
+\section{Methods}
+\label{sec:methods}
+%% -------------------------------------------------------------------------
+
+\subsection{Feature engineering: the difference representation}
+
+The raw dataset contains symmetrically paired Red/Blue columns for every
+fighter statistic.
+We replace each pair $(x_{\text{red}}, x_{\text{blue}})$ with the signed
+difference $\Delta x = x_{\text{red}} - x_{\text{blue}}$.
+This yields a matchup-symmetric feature space: swapping Red and Blue
+negates all difference features and flips the outcome, so the representation
+is not corner-biased.
+The resulting \emph{diff} feature set contains 26 predictors (numeric
+differences plus categorical context variables: gender, title-bout indicator,
+and number of scheduled rounds).
+
+Missing values are imputed inside the model pipeline using column medians
+for numeric features and mode for categorical features, so all 6{,}275 bouts
+are preserved.
+
+\subsection{Data split strategy}
+
+All models use a \textbf{chronological holdout split}: fights are sorted by
+date, the earliest 80\% form the training set (5{,}020 bouts), and the most
+recent 20\% form the test set (1{,}255 bouts; fights from approximately
+late 2021 onwards).
+This choice prevents \emph{time leakage}: using future fight data to predict
+past fights would give an optimistic and unrealistic evaluation.
+Random splits are inappropriate here because the same fighter appears in many
+bouts; a random split would leak information about individual fighters'
+long-run averages into the training set.
+
+\subsection{Model 1: Logistic Regression (baseline)}
+
+Logistic regression models the log-odds of Red winning as a linear function
+of the (scaled, imputed) difference features:
+\[
+  \log \frac{P(\text{Red wins})}{1 - P(\text{Red wins})} = \beta_0 + \boldsymbol{\beta}^\top \Delta\mathbf{x}.
+\]
+\textbf{Strengths}: interpretable coefficients, fast to fit, well-calibrated
+probabilities.
+\textbf{Weaknesses}: assumes a linear decision boundary; cannot capture
+non-linear interactions between features.
+In our setting the feature space is noisy and low-signal; a linear boundary
+is a reasonable starting assumption.
+No regularisation is applied; coefficients are estimated by maximum
+likelihood.
+
+\subsection{Model 2: Elastic Net Logistic Regression (penalised, tuned)}
+
+Elastic Net adds a combined $\ell_1$-$\ell_2$ penalty to the log-likelihood:
+\[
+  \mathcal{L}(\boldsymbol{\beta}) - \lambda \left[
+    \frac{1-\alpha}{2}\|\boldsymbol{\beta}\|_2^2
+    + \alpha \|\boldsymbol{\beta}\|_1
+  \right],
+\]
+where $C = 1/\lambda$ controls regularisation strength and $\alpha$
+(called \texttt{l1\_ratio} in scikit-learn) interpolates between Ridge
+($\alpha=0$) and Lasso ($\alpha=1$).
+Elastic Net is preferable to pure Lasso when predictors are correlated:
+Lasso tends to arbitrarily discard one of a correlated group, whereas
+Ridge-like shrinkage stabilises the selection.
+
+\textbf{Hyperparameter tuning} uses a nested cross-validation structure:
+\begin{itemize}
+  \item \textbf{Outer split}: the chronological 80/20 holdout (shared with
+  all models), providing an honest test estimate.
+  \item \textbf{Inner CV}: 5-fold stratified cross-validation over the
+  training set, optimising negative log loss.
+  \item \textbf{Grid}: $C \in \{0.01, 0.1, 1.0, 10.0\}$,
+  $\alpha \in \{0.1, 0.5, 0.9, 1.0\}$ (16 combinations).
+\end{itemize}
+The best parameters found were $C = 0.01$ (strong regularisation),
+$\alpha = 0.1$ (mostly Ridge with a light Lasso component).
+21 out of 26 features survived the Lasso component with non-zero
+coefficients.
+
+\subsection{Model 3: Random Forest}
+
+A Random Forest trains $B = 400$ decision trees on bootstrap samples and
+averages their probability estimates.
+Each tree considers $\sqrt{p}$ randomly selected features at each split
+(bagging combined with the random subspace method).
+\textbf{Strengths}: captures non-linear structure and feature interactions
+without explicit specification; robust to outliers; provides feature
+importances via mean decrease in impurity.
+\textbf{Weaknesses}: less interpretable than linear models; can overfit with
+deep trees on small datasets.
+We set \texttt{min\_samples\_leaf = 10} to regularise tree depth and reduce
+variance; this was chosen by expert judgment given the dataset size
+(5{,}020 training observations, 26 features).
+
+\subsection{Model 4: Gradient Boosted Trees (XGBoost)}
+
+XGBoost builds trees sequentially, with each tree correcting the residuals
+of the current ensemble.
+The learning rate (\texttt{learning\_rate} $= 0.05$) limits each tree's
+contribution to prevent overfitting, and stochastic subsampling
+(\texttt{subsample} $= 0.8$, \texttt{colsample\_bytree} $= 0.8$) introduces
+variance reduction.
+The minimum child weight (\texttt{min\_child\_weight} $= 5$) acts as
+additional regularisation on leaf size.
+\textbf{Strengths}: strong empirical performance; handles missing values
+natively; flexible regularisation.
+\textbf{Weaknesses}: more hyperparameters to configure; prone to overfitting
+without careful tuning; less interpretable than logistic regression.
+
+\subsection{Evaluation metrics}
+
+All models are evaluated on the held-out chronological test set and compared
+against the bookmaker-implied probability baseline.
+We report:
+\begin{itemize}
+  \item \textbf{Accuracy}: fraction of correctly predicted outcomes
+  (threshold at 0.5).
+  \item \textbf{Log loss} (cross-entropy): measures calibration and
+  sharpness of probability estimates; lower is better.
+  Treated as the primary ranking metric because it rewards well-calibrated
+  probabilities, not just the sign of the prediction.
+  \item \textbf{Brier score}: mean squared error between predicted
+  probabilities and binary outcomes; lower is better.
+  \item \textbf{ROC AUC}: area under the receiver operating characteristic
+  curve; measures discrimination ability independently of the decision
+  threshold.
+\end{itemize}
+
+%% -------------------------------------------------------------------------
+\section{Results and Interpretation}
+\label{sec:results}
+%% -------------------------------------------------------------------------
+
+\subsection{Model performance}
+
+Table~\ref{tab:results} compares all models on the 1{,}255-bout test set.
+The bookmaker benchmark is shown for reference; $\Delta$ values are
+signed differences relative to the bookmaker (negative $\Delta$ log
+loss / Brier is better; positive $\Delta$ accuracy / AUC is better).
+
+\begin{table}[H]
+\centering
+\caption{Test-set evaluation results (chronological holdout, $n_{\text{test}} = 1{,}255$).}
+\label{tab:results}
+\begin{tabular}{lcccccc}
+\toprule
+Model & Acc & $\Delta$ Acc & Log Loss & $\Delta$ LL & Brier & ROC AUC \\
+\midrule
+Bookmaker (baseline)    & 0.696 & ---    & 0.593 & ---    & 0.204 & 0.743 \\
+Naive (majority class)  & 0.571 & $-$0.124 & 0.693 & $+$0.100 & 0.250 & 0.500 \\
+Logistic Regression     & 0.635 & $-$0.060 & 0.636 & $+$0.043 & 0.223 & 0.673 \\
+Elastic Net (nested CV) & 0.640 & $-$0.056 & 0.635 & $+$0.041 & 0.222 & 0.682 \\
+\textbf{Random Forest}  & \textbf{0.636} & $-$0.060 & \textbf{0.633} & $+$0.040 & \textbf{0.221} & \textbf{0.693} \\
+XGBoost                 & 0.632 & $-$0.064 & 0.636 & $+$0.043 & 0.223 & 0.670 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Random Forest achieves the best log loss (0.633), Brier score (0.221), and
+ROC AUC (0.693).
+However, the differences among Logistic Regression, Elastic Net, and Random
+Forest are small (log loss range $< 0.004$), suggesting that the dominant
+bottleneck is the limited predictive content of public statistics, not the
+model family.
+XGBoost performs slightly worse despite its higher complexity, consistent
+with a higher-variance model that cannot be offset by the available signal.
+
+All models comfortably beat the naive majority-class baseline (AUC 0.5)
+but remain well below the bookmaker (AUC 0.743).
+The persistent $\approx$5.5 percentage-point accuracy gap to the bookmaker
+quantifies the information advantage of market prices over publicly available
+fight statistics.
+
+\subsection{Confusion matrices and class-level behaviour}
+
+Table~\ref{tab:cm} shows confusion matrix entries and precision/recall for
+each model.
+A striking pattern is that all models predict Red wins the large majority
+of the time, driven by the 58.1\% class imbalance.
+Recall for the Red class (fraction of actual Red wins correctly called) is
+above 0.83 for all linear/ensemble models, while recall for the Blue class
+is much lower.
+XGBoost achieves the most balanced predictions (TN = 233, highest among all
+models), reflecting the effect of \texttt{min\_child\_weight} regularisation.
+
+\begin{table}[H]
+\centering
+\caption{Confusion matrix entries and precision/recall on the test set
+($n = 1{,}255$; 717 Red wins, 538 Blue wins).
+Precision and recall are reported for the Red-wins class (positive class).}
+\label{tab:cm}
+\begin{tabular}{lrrrrrr}
+\toprule
+Model & TN & FP & FN & TP & Precision & Recall \\
+\midrule
+Logistic Regression     & 202 & 336 & 122 & 595 & 0.639 & 0.830 \\
+Elastic Net (nested CV) & 198 & 340 & 112 & 605 & 0.640 & 0.844 \\
+Random Forest           & 201 & 337 & 120 & 597 & 0.639 & 0.833 \\
+XGBoost                 & 233 & 305 & 157 & 560 & 0.647 & 0.781 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{ROC curves}
+
+Figure~\ref{fig:roc} shows the ROC curve for the best-performing model
+(Random Forest) alongside the bookmaker benchmark.
+The bookmaker ROC curve lies clearly above the model curve across all
+thresholds, confirming that market odds encode more discriminative
+information than our feature set.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.58\textwidth]{../figures/evaluation/random_forest_diff_roc.png}
+\caption{ROC curves for the Random Forest model versus the bookmaker
+baseline on the test set. The bookmaker (AUC = 0.743) substantially
+outperforms the best statistical model (AUC = 0.693).}
+\label{fig:roc}
+\end{figure}
+
+\subsection{Coefficient interpretation (Elastic Net)}
+
+Table~\ref{tab:coefs} shows the largest-magnitude Elastic Net coefficients
+after nested-CV tuning ($C = 0.01$, $\alpha = 0.1$).
+The strong regularisation ($C = 0.01$) shrinks all coefficients toward zero;
+21 out of 26 features survive with non-zero weights.
+Positive coefficients indicate features that, when larger for the Red
+corner, increase the predicted probability of a Red victory.
+
+\begin{table}[H]
+\centering
+\caption{Top 8 Elastic Net coefficients (sorted by $|\hat{\beta}|$).
+The Lasso component zeroed out 5 features; the remaining 21 are listed
+in the full CSV at \texttt{reports/metrics/elasticnet\_nested\_cv\_diff\_coefficients.csv}.}
+\label{tab:coefs}
+\begin{tabular}{lrl}
+\toprule
+Feature & $\hat{\beta}$ & Interpretation \\
+\midrule
+\texttt{AgeDiff}              & $-0.259$ & Older Red fighter $\rightarrow$ lower Red win probability \\
+\texttt{AvgTDLandedDiff}      & $+0.123$ & Red takedown advantage $\rightarrow$ higher Red win prob. \\
+\texttt{ReachCmsDiff}         & $+0.105$ & Red reach advantage $\rightarrow$ higher Red win prob. \\
+\texttt{CurrentWinStreakDiff} & $+0.104$ & Longer Red active win streak $\rightarrow$ higher Red win prob. \\
+\texttt{LossesDiff}           & $-0.087$ & More career losses for Red $\rightarrow$ lower Red win prob. \\
+\texttt{WeightLbsDiff}        & $+0.080$ & Red weight advantage $\rightarrow$ higher Red win prob. \\
+\texttt{LongestWinStreakDiff} & $+0.069$ & Longer Red peak win streak $\rightarrow$ higher Red win prob. \\
+\texttt{DrawsDiff}            & $+0.057$ & More draws for Red $\rightarrow$ slight Red win advantage \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The negative age coefficient warrants attention: \texttt{AgeDiff} = Age$_\text{Red}$ $-$ Age$_\text{Blue}$, so the negative sign means older Red fighters are predicted to win less often.
+Since Red fighters tend to be older (mean \texttt{AgeDiff} = 0.56 years), this
+coefficient captures a pattern where relatively younger opponents outperform
+statistical expectations, possibly reflecting the age-related decline of
+veteran Red-corner fighters.
+
+\subsection{Feature importance (Random Forest)}
+
+Figure~\ref{fig:rf_importance} shows the top-20 feature importances from the
+Random Forest, measured by mean decrease in impurity.
+The top three features are \texttt{AgeDiff}, \texttt{AvgSigStrLandedDiff},
+and \texttt{AvgTDLandedDiff}.
+This broadly agrees with the Elastic Net coefficient magnitudes
+(Table~\ref{tab:coefs}), giving confidence that these features carry genuine
+signal rather than being artefacts of one particular model class.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\textwidth]{../figures/feature_importance/random_forest_diff_importance.png}
+\caption{Random Forest feature importances (mean decrease in impurity) for
+the top 20 features. \texttt{AgeDiff} dominates; grappling and striking
+averages follow.}
+\label{fig:rf_importance}
+\end{figure}
+
+\subsection{Bias-variance discussion}
+
+Logistic regression has the lowest variance but a linear decision boundary
+that cannot capture threshold effects (e.g., a reach advantage may matter
+very differently in the heavyweight division versus flyweight).
+Random Forest and XGBoost have lower bias and can fit interactions, but their
+higher variance is partially controlled through regularisation
+(\texttt{min\_samples\_leaf = 10} and \texttt{min\_child\_weight = 5}).
+Despite the added flexibility, ensemble methods do not substantially improve
+over regularised logistic regression (log loss difference $< 0.004$).
+This suggests that the signal-to-noise ratio in public UFC statistics is
+intrinsically low, and the variance cost of flexible models nearly cancels
+their bias benefit.
+
+The fact that $C = 0.01$ (strong regularisation) was selected by inner CV
+for the Elastic Net also points in this direction: the CV is protecting
+against overfitting to noise, not trying to fit a complex signal.
+
+\subsection{Limitations}
+
+\begin{itemize}
+  \item \textbf{Bookmaker gap}: The persistent $\approx$5.5 percentage-point
+  accuracy gap to the bookmaker suggests important predictors (training camp
+  quality, recent injuries, travel, stylistic matchups) are unobservable
+  from public statistics.
+  \item \textbf{Missing data}: Many earlier bouts lack complete fighter
+  statistics; median imputation introduces noise that may weaken model
+  discrimination for these fights.
+  \item \textbf{Label asymmetry}: The Red/Blue assignment is non-random;
+  Red fighters tend to be higher-ranked and older.
+  This means the difference features carry a structural bias toward the
+  Red corner that the model must implicitly correct for.
+  \item \textbf{Fixed hyperparameters}: Hyperparameters for Random Forest
+  and XGBoost were not formally tuned; nested CV for these models might
+  close the small remaining gap to the bookmaker.
+  \item \textbf{Chronological split}: Using only the last 20\% of fights as
+  the test set means test performance is measured on recent fights.
+  If fighter statistics tracking or matchmaking strategy has changed over
+  time, the train-test gap may reflect distributional shift rather than
+  true generalisation error.
+\end{itemize}
+
+%% -------------------------------------------------------------------------
+\section{Summary}
+%% -------------------------------------------------------------------------
+
+We framed UFC fight outcome prediction as a binary classification problem
+and compared three model families on a chronological test set of 1{,}255
+bouts.
+All models comfortably beat the naive majority-class baseline (AUC 0.5) and
+extract meaningful signal from the difference feature representation.
+No model closes the gap to the bookmaker benchmark (AUC 0.743), confirming
+that market-implied probabilities encode information not accessible from
+public fighter statistics alone.
+
+The Random Forest achieved the best overall performance (log loss 0.633,
+AUC 0.693), but the margin over regularised logistic regression is small.
+The Elastic Net with nested cross-validation provided the best
+interpretability: inner cross-validation selected strong regularisation
+($C = 0.01$), and 21 out of 26 features survived the Lasso step.
+The most important predictors across both model families were average
+takedowns landed, age difference, reach advantage, and win-streak difference.
+
+The most practically significant finding is the consistency of the
+bookmaker gap across all models.
+It establishes a clear ceiling: the information contained in publicly
+available cumulative career statistics is real but insufficient, and
+closing the gap would require access to information that is currently
+not captured in any public dataset.
+
+\end{document}
