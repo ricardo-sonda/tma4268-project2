@@ -1,4 +1,5 @@
 data/
+datasets/
 .venv/
 .claude/
 *.db
@@ -7,3 +8,11 @@ __pycache__/
 reports/figures/
 reports/metrics/
 reports/predictions/
+
+# LaTeX build artifacts
+reports/latex/*.aux
+reports/latex/*.fdb_latexmk
+reports/latex/*.fls
+reports/latex/*.log
+reports/latex/*.out
+reports/latex/*.synctex.gz

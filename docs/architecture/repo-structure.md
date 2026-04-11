@@ -71,6 +71,14 @@ Responsibilities:
 - print the columns produced by a named feature set
 - make feature-set inspection available as a small direct CLI entrypoint
 
+### `src/missing.py`
+
+Responsibilities:
+- analyze and visualize missingness in the cleaned dataset
+- write focused missingness figures into `reports/figures/missing/`
+
+This module operates on `data/interim/` (the cleaned CSV), not on the raw source.
+
 ### `src/plots.py`
 
 Responsibilities:

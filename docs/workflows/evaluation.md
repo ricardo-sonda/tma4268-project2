@@ -39,6 +39,9 @@ Current standardized metrics:
 - log loss
 - Brier score
 - ROC AUC
+- precision (class 1 = Red wins)
+- recall (class 1 = Red wins)
+- F1 score (class 1 = Red wins)
 
 These are not the final class value function, but they are the current shared comparison surface.
 
@@ -48,6 +51,7 @@ Evaluation writes:
 - metrics JSON under `reports/metrics/`
 - per-fight prediction CSVs under `reports/predictions/`
 - ROC comparison plots under `reports/figures/evaluation/`
+- confusion matrix plots under `reports/figures/evaluation/`
 
 The terminal UI in [`src/tui.py`](../../src/tui.py) reads those current artifacts directly.
 
