@@ -28,7 +28,7 @@
 \section*{Abstract}
 %% -------------------------------------------------------------------------
 
-We address the problem of predicting the winner of a UFC mixed martial arts
+We examine the feasibility of predicting the winner of a UFC martial arts
 fight from pre-fight statistics only.
 The target is a binary outcome: whether the fighter assigned to the Red
 corner wins (\texttt{WinnerRed} = 1) or loses (\texttt{WinnerRed} = 0).
@@ -37,27 +37,26 @@ The dataset is the \emph{Ultimate UFC Dataset} sourced from Kaggle
 March 2010 and December 2024 with per-fighter cumulative statistics recorded
 at fight time.
 
-We construct \emph{difference features} --- each numeric statistic is
-replaced by its Red-minus-Blue signed difference --- to make the feature
-space matchup-symmetric and reduce dimensionality from 118 to 26 predictors.
+We make use of a \emph{difference features} feature set - each numeric statistic is
+replaced by its Red-minus-Blue signed difference - to remove redundancy 
+in the dataset and reduce dimensionality from 118 to 26 predictors.
 Three model families are compared: penalised logistic regression (Elastic
 Net, tuned with nested cross-validation), a Random Forest ensemble, and
 gradient-boosted trees (XGBoost).
 All models are evaluated on a chronological 80/20 holdout split to prevent
-time leakage, and benchmarked against the bookmaker-implied win probability
+time leakage, and benchmarked against the implied win probabilities
 derived from pre-fight betting odds.
 
-The bookmaker baseline achieves an accuracy of 69.6\% and a ROC AUC of
-0.743.
-Our best-performing model, the Random Forest, reaches an accuracy of 63.6\%
+The bookmaker (betting-implied) baseline achieves an accuracy of 69.6\% and a ROC AUC of 0.743.
+The model with best performance, the Random Forest, reaches an accuracy of 63.6\%
 and a ROC AUC of 0.693.
 The gap to the bookmaker confirms that publicly available fighter statistics
 contain real predictive signal but fall well short of the full information
-encoded in market odds.
-Among observable predictors, average takedown-landed difference, reach
+encoded in market odds, as expected.
+Among observable predictors, the average takedown-landed difference, reach
 advantage, and win-streak difference emerge as the strongest predictors of
-fight outcome, while a negative age coefficient reveals that older Red-corner
-fighters tend to underperform relative to the prediction.
+fight outcome, while a negative age coefficient reveals that an age gap is a 
+significant disadvantage for older fighters.
 
 %% -------------------------------------------------------------------------
 \section{Introduction}
@@ -65,9 +64,9 @@ fighters tend to underperform relative to the prediction.
 
 Mixed martial arts (MMA) is one of the fastest-growing combat sports
 globally, and the UFC is its premier organisation.
-Each fight is a highly complex event influenced by physical attributes,
+Fights can be thought of is a highly complex event influenced by physical attributes,
 technical skills, recent form, and matchup dynamics.
-Predicting fight outcomes is a canonical classification problem: given
+Predicting fight outcomes is a classic classification problem: given
 observable pre-fight information about both fighters, can we assign a
 probability that the Red-corner fighter wins?
 
@@ -78,24 +77,38 @@ The dataset records 6{,}528 bouts with 118 raw columns, including
 per-fighter cumulative career statistics (wins, losses, streaks, striking
 and grappling averages, physical measurements), contextual fight information
 (weight class, number of rounds, gender), and bookmaker moneyline odds.
-After filtering to bouts with a decisive Red or Blue winner and dropping
-pre-computed difference columns provided by the source, we retain 6{,}275
+After filtering to bouts with a decisive Red or Blue winner (no ties) and dropping
+the pre-computed difference columns provided by the source, we retain 6{,}275
 bouts for analysis.
 
 \paragraph{Task and scope.}
 Our goal is to build a classifier that, given only pre-fight information,
 assigns a calibrated probability of a Red-corner victory.
 We benchmark every model against bookmaker-implied probabilities --- a
-near-market-efficient baseline that absorbs information beyond public
+pretty-much-near-market-efficient baseline that absorbs information beyond public
 statistics.
-The intended audience is a sports analytics practitioner who wants to
-understand which statistical learning method extracts the most signal from
-observable fighter data, and which pre-fight features drive predictions.
+This project is meant as an exercise in the statistical methods employed in the
+statistical learning course and we do not intend to create a model that beats 
+the moneyline odds. 
 
 \paragraph{Practical constraint.}
-Because betting-odds leakage would trivially dominate any model, odds-derived
-columns are excluded from all feature sets; the odds appear only as a
+Because leakage from betting odds onto odds-derived features would trivially dominate any model, 
+odds-derived columns are excluded from all feature sets; the odds appear only as a
 benchmark in evaluation.
+
+\paragraph{How moneyline odds work.}
+UFC betting odds are usually quoted as \emph{American moneyline} odds.
+A negative line (e.g., $-150$) indicates the favourite: you must stake 150
+units to win 100 units of profit.
+A positive line (e.g., $+130$) indicates the underdog: a 100-unit stake wins
+130 units of profit.
+These lines can be converted to implied win probabilities using
+$p = \frac{|o|}{|o| + 100}$ for negative odds $o < 0$, and
+$p = \frac{100}{o + 100}$ for positive odds $o > 0$.
+In practice, bookmakers include a margin (``vig''), so the two implied
+probabilities in a matchup typically sum to slightly more than 1.
+In this project, we generally work with implied probabilities instead of the 
+moneyline odds.
 
 %% -------------------------------------------------------------------------
 \section{Descriptive Data Analysis}
@@ -145,17 +158,19 @@ Feature & Mean & Std & Min & Max \\
 \end{tabular}
 \end{table}
 
-The near-zero means for the difference features are expected: the UFC
+The near-zero means for the difference features are expected, since the UFC
 broadly matches fighters of comparable ability, so the average edge is
 close to zero.
 The positive mean for \texttt{WinsDiff} (1.49) and \texttt{AgeDiff} (0.56)
-reflects the Red-corner assignment policy: Red fighters tend to have
-slightly more career wins and are slightly older.
+reflects the aforementioned policy for assigning more experienced fighters
+to the red corner.
 
 \subsection{Missingness}
 
-Many career-statistics columns have substantial missing values for early
-bouts where tracking was incomplete.
+Many statistics columns have substantial missing values for early
+bouts during when tracking was incomplete. Also, a substantial number of features
+related to weight-classes are empty both due to the sparse encoding and due unrecorded
+data for unranked fighters. 
 Figure~\ref{fig:missing_bar} shows the completeness rate per column.
 The \emph{diff} feature set strategy (Section~\ref{sec:methods}) retains
 all rows and delegates imputation to the model pipeline.
@@ -175,8 +190,8 @@ Figure~\ref{fig:corr_target} shows the Pearson correlation of each numeric
 raw column with the binary outcome \texttt{WinnerRed}.
 Correlations are modest ($|r| < 0.12$), confirming that no single feature
 is strongly predictive on its own.
-Win streak, cumulative wins, and significant-strike statistics show the
-highest marginal associations.
+Age, win streak, cumulative wins, and significant-strike statistics show the
+highest marginal correlations.
 
 \begin{figure}[H]
 \centering
@@ -207,11 +222,11 @@ substantially, reflecting the difficulty of the prediction task.}
 
 \subsection{Feature correlation structure}
 
-Red and Blue fighter statistics are highly internally correlated (e.g.,
+The fighter statistics are highly internally correlated (e.g.,
 wins is correlated with win streak and total rounds fought).
-This motivates using difference features to compress correlated Red/Blue
-column pairs into a single signed quantity, reducing multicollinearity in
-linear models.
+This motivates using difference features to compress the Red/Blue
+column pairs into a single signed quantity, reducing some of the multicolinearity
+in the features.
 
 %% -------------------------------------------------------------------------
 \section{Methods}
