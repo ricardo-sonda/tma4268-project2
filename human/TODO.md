@@ -1,2 +1,0 @@
-- [ ] Tydelig definert målfunksjon (odds vs expected value, hvordan sammenligner vi etc)
-- [ ] Visualisere resultater på en god måte når man kjører make evaluate
