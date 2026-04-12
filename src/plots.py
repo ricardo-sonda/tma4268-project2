@@ -119,7 +119,7 @@ def plot_feature_importances(model_name: str, importances: pd.Series) -> None:
     top = importances.sort_values(ascending=False).head(20)
     fig, ax = plt.subplots(figsize=(8, 6))
     colors = sns.color_palette("Blues_r", len(top))
-    top.plot.barh(ax=ax, color=colors[::-1])
+    top.plot.barh(ax=ax, color=colors)
     ax.invert_yaxis()
     ax.set_xlabel("Importance", fontsize=11)
     ax.set_title(f"Feature Importances — {model_name}", fontsize=12)

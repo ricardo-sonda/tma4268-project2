@@ -17,7 +17,7 @@
 
 \title{Predicting UFC Fight Outcomes Using Pre-Fight Fighter Statistics\\
 \large Compulsory Exercise 2 --- TMA4268 Statistical Learning V2026}
-\author{Ricardo Sonda Guiraudeli}
+\author{Ricardo Sonda Guiraudeli; Vegard Ragnhildstveit; Anders Bekkevard}
 \date{April 2026}
 
 \begin{document}
@@ -233,54 +233,53 @@ in the features.
 \label{sec:methods}
 %% -------------------------------------------------------------------------
 
-\subsection{Feature engineering: the difference representation}
+\subsection{Feature engineering}
 
 The raw dataset contains symmetrically paired Red/Blue columns for every
 fighter statistic.
 We replace each pair $(x_{\text{red}}, x_{\text{blue}})$ with the signed
 difference $\Delta x = x_{\text{red}} - x_{\text{blue}}$.
-This yields a matchup-symmetric feature space: swapping Red and Blue
+This yields symmetric features: swapping Red and Blue
 negates all difference features and flips the outcome, so the representation
-is not corner-biased.
+is not biased on the corners.
 The resulting \emph{diff} feature set contains 26 predictors (numeric
 differences plus categorical context variables: gender, title-bout indicator,
 and number of scheduled rounds).
 
-Missing values are imputed inside the model pipeline using column medians
+Missing values are imputed inside using medians
 for numeric features and mode for categorical features, so all 6{,}275 bouts
 are preserved.
 
-\subsection{Data split strategy}
+\subsection{Data split}
 
 All models use a \textbf{chronological holdout split}: fights are sorted by
 date, the earliest 80\% form the training set (5{,}020 bouts), and the most
 recent 20\% form the test set (1{,}255 bouts; fights from approximately
 late 2021 onwards).
-This choice prevents \emph{time leakage}: using future fight data to predict
-past fights would give an optimistic and unrealistic evaluation.
-Random splits are inappropriate here because the same fighter appears in many
-bouts; a random split would leak information about individual fighters'
-long-run averages into the training set.
+This choice prevents \emph{time leakage}: since some numeric features are
+cumulative fighter statistics, information about the results of past fights
+are contained in the later entries. Using this information to predict
+previous fights thus leads to leakage.
 
 \subsection{Model 1: Logistic Regression (baseline)}
 
 Logistic regression models the log-odds of Red winning as a linear function
-of the (scaled, imputed) difference features:
+of the (min-max scaled and imputed) difference features:
 \[
   \log \frac{P(\text{Red wins})}{1 - P(\text{Red wins})} = \beta_0 + \boldsymbol{\beta}^\top \Delta\mathbf{x}.
 \]
-\textbf{Strengths}: interpretable coefficients, fast to fit, well-calibrated
-probabilities.
+\textbf{Strengths}: interpretable coefficients, fast to fit, simple.
 \textbf{Weaknesses}: assumes a linear decision boundary; cannot capture
 non-linear interactions between features.
-In our setting the feature space is noisy and low-signal; a linear boundary
+In our setting the feature space is noisy and low-signal, so a linear boundary
 is a reasonable starting assumption.
-No regularisation is applied; coefficients are estimated by maximum
-likelihood.
+No regularisation is applied for the baseline model. Coefficients are estimated
+by likelihood.
 
 \subsection{Model 2: Elastic Net Logistic Regression (penalised, tuned)}
 
-Elastic Net adds a combined $\ell_1$-$\ell_2$ penalty to the log-likelihood:
+An Elastic Net is just a Logistic Regression 
+with hybrid $L_1$ and $L_2$ regularisation penalty to the log-likelihood:
 \[
   \mathcal{L}(\boldsymbol{\beta}) - \lambda \left[
     \frac{1-\alpha}{2}\|\boldsymbol{\beta}\|_2^2
@@ -294,33 +293,32 @@ Elastic Net is preferable to pure Lasso when predictors are correlated:
 Lasso tends to arbitrarily discard one of a correlated group, whereas
 Ridge-like shrinkage stabilises the selection.
 
-\textbf{Hyperparameter tuning} uses a nested cross-validation structure:
+Our \textbf{hyperparameter tuning} uses a nested cross-validation structure:
 \begin{itemize}
   \item \textbf{Outer split}: the chronological 80/20 holdout (shared with
-  all models), providing an honest test estimate.
+  all models).
   \item \textbf{Inner CV}: 5-fold stratified cross-validation over the
-  training set, optimising negative log loss.
+  training set.
   \item \textbf{Grid}: $C \in \{0.01, 0.1, 1.0, 10.0\}$,
   $\alpha \in \{0.1, 0.5, 0.9, 1.0\}$ (16 combinations).
 \end{itemize}
 The best parameters found were $C = 0.01$ (strong regularisation),
 $\alpha = 0.1$ (mostly Ridge with a light Lasso component).
-21 out of 26 features survived the Lasso component with non-zero
+21 out of 26 features survived the Lasso non-zero
 coefficients.
 
 \subsection{Model 3: Random Forest}
 
 A Random Forest trains $B = 400$ decision trees on bootstrap samples and
-averages their probability estimates.
-Each tree considers $\sqrt{p}$ randomly selected features at each split
-(bagging combined with the random subspace method).
+averages their estimates.
+Each tree considers $\sqrt{p}$ randomly selected features at each split.
 \textbf{Strengths}: captures non-linear structure and feature interactions
 without explicit specification; robust to outliers; provides feature
 importances via mean decrease in impurity.
 \textbf{Weaknesses}: less interpretable than linear models; can overfit with
 deep trees on small datasets.
 We set \texttt{min\_samples\_leaf = 10} to regularise tree depth and reduce
-variance; this was chosen by expert judgment given the dataset size
+variance; this was chosen by our judgment given the dataset size
 (5{,}020 training observations, 26 features).
 
 \subsection{Model 4: Gradient Boosted Trees (XGBoost)}
@@ -341,19 +339,19 @@ without careful tuning; less interpretable than logistic regression.
 \subsection{Evaluation metrics}
 
 All models are evaluated on the held-out chronological test set and compared
-against the bookmaker-implied probability baseline.
+against the bookmaker-implied probabilities.
 We report:
 \begin{itemize}
   \item \textbf{Accuracy}: fraction of correctly predicted outcomes
   (threshold at 0.5).
   \item \textbf{Log loss} (cross-entropy): measures calibration and
-  sharpness of probability estimates; lower is better.
+  sharpness of probability estimates. Lower is better.
   Treated as the primary ranking metric because it rewards well-calibrated
   probabilities, not just the sign of the prediction.
   \item \textbf{Brier score}: mean squared error between predicted
-  probabilities and binary outcomes; lower is better.
+  probabilities and binary outcomes. Lower is better.
   \item \textbf{ROC AUC}: area under the receiver operating characteristic
-  curve; measures discrimination ability independently of the decision
+  curve. Measures the discrimination ability independent of the decision
   threshold.
 \end{itemize}
 
@@ -365,9 +363,9 @@ We report:
 \subsection{Model performance}
 
 Table~\ref{tab:results} compares all models on the 1{,}255-bout test set.
-The bookmaker benchmark is shown for reference; $\Delta$ values are
-signed differences relative to the bookmaker (negative $\Delta$ log
-loss / Brier is better; positive $\Delta$ accuracy / AUC is better).
+The bookmaker benchmark is shown for reference. $\Delta$ values are
+signed differences relative to the bookmaker (for negative $\Delta$ log
+loss, Brier is better. For positive $\Delta$ accuracy, AUC is better).
 
 \begin{table}[H]
 \centering
@@ -391,22 +389,21 @@ Random Forest achieves the best log loss (0.633), Brier score (0.221), and
 ROC AUC (0.693).
 However, the differences among Logistic Regression, Elastic Net, and Random
 Forest are small (log loss range $< 0.004$), suggesting that the dominant
-bottleneck is the limited predictive content of public statistics, not the
+bottleneck is the limited content of the public statistics, not the
 model family.
-XGBoost performs slightly worse despite its higher complexity, consistent
-with a higher-variance model that cannot be offset by the available signal.
+XGBoost performs slightly worse despite its higher complexity.
 
 All models comfortably beat the naive majority-class baseline (AUC 0.5)
 but remain well below the bookmaker (AUC 0.743).
-The persistent $\approx$5.5 percentage-point accuracy gap to the bookmaker
-quantifies the information advantage of market prices over publicly available
-fight statistics.
+One way to interpret the persistent $\approx$5.5 percentage-point accuracy gap
+to the bookmaker is that it quantifies the information advantage of market 
+prices over publicly available fight statistics.
 
-\subsection{Confusion matrices and class-level behaviour}
+\subsection{Confusion matrices}
 
 Table~\ref{tab:cm} shows confusion matrix entries and precision/recall for
 each model.
-A striking pattern is that all models predict Red wins the large majority
+A common pattern is that all models predict Red wins the large majority
 of the time, driven by the 58.1\% class imbalance.
 Recall for the Red class (fraction of actual Red wins correctly called) is
 above 0.83 for all linear/ensemble models, while recall for the Blue class
@@ -444,7 +441,7 @@ information than our feature set.
 \centering
 \includegraphics[width=0.58\textwidth]{../figures/evaluation/random_forest_diff_roc.png}
 \caption{ROC curves for the Random Forest model versus the bookmaker
-baseline on the test set. The bookmaker (AUC = 0.743) substantially
+baseline on the test set. The bookmaker (AUC = 0.743)
 outperforms the best statistical model (AUC = 0.693).}
 \label{fig:roc}
 \end{figure}
@@ -453,16 +450,14 @@ outperforms the best statistical model (AUC = 0.693).}
 
 Table~\ref{tab:coefs} shows the largest-magnitude Elastic Net coefficients
 after nested-CV tuning ($C = 0.01$, $\alpha = 0.1$).
-The strong regularisation ($C = 0.01$) shrinks all coefficients toward zero;
+The strong regularisation ($C = 0.01$) shrinks coefficients toward zero, and
 21 out of 26 features survive with non-zero weights.
 Positive coefficients indicate features that, when larger for the Red
 corner, increase the predicted probability of a Red victory.
 
 \begin{table}[H]
 \centering
-\caption{Top 8 Elastic Net coefficients (sorted by $|\hat{\beta}|$).
-The Lasso component zeroed out 5 features; the remaining 21 are listed
-in the full CSV at \texttt{reports/metrics/elasticnet\_nested\_cv\_diff\_coefficients.csv}.}
+\caption{Top 8 Elastic Net coefficients (sorted by $|\hat{\beta}|$)}.
 \label{tab:coefs}
 \begin{tabular}{lrl}
 \toprule
@@ -483,8 +478,8 @@ Feature & $\hat{\beta}$ & Interpretation \\
 The negative age coefficient warrants attention: \texttt{AgeDiff} = Age$_\text{Red}$ $-$ Age$_\text{Blue}$, so the negative sign means older Red fighters are predicted to win less often.
 Since Red fighters tend to be older (mean \texttt{AgeDiff} = 0.56 years), this
 coefficient captures a pattern where relatively younger opponents outperform
-statistical expectations, possibly reflecting the age-related decline of
-veteran Red-corner fighters.
+statistical expectations, possibly reflecting some age related decline of
+the more veteran Red fighters.
 
 \subsection{Feature importance (Random Forest)}
 
@@ -500,8 +495,8 @@ signal rather than being artefacts of one particular model class.
 \centering
 \includegraphics[width=0.78\textwidth]{../figures/feature_importance/random_forest_diff_importance.png}
 \caption{Random Forest feature importances (mean decrease in impurity) for
-the top 20 features. \texttt{AgeDiff} dominates; grappling and striking
-averages follow.}
+the top 20 features. \texttt{AgeDiff} dominates, with grappling and striking
+averages following.}
 \label{fig:rf_importance}
 \end{figure}
 
@@ -511,7 +506,7 @@ Logistic regression has the lowest variance but a linear decision boundary
 that cannot capture threshold effects (e.g., a reach advantage may matter
 very differently in the heavyweight division versus flyweight).
 Random Forest and XGBoost have lower bias and can fit interactions, but their
-higher variance is partially controlled through regularisation
+higher variance must be controlled through regularisation
 (\texttt{min\_samples\_leaf = 10} and \texttt{min\_child\_weight = 5}).
 Despite the added flexibility, ensemble methods do not substantially improve
 over regularised logistic regression (log loss difference $< 0.004$).
@@ -531,20 +526,19 @@ against overfitting to noise, not trying to fit a complex signal.
   quality, recent injuries, travel, stylistic matchups) are unobservable
   from public statistics.
   \item \textbf{Missing data}: Many earlier bouts lack complete fighter
-  statistics; median imputation introduces noise that may weaken model
+  statistics and median imputation introduces noise that may weaken model
   discrimination for these fights.
-  \item \textbf{Label asymmetry}: The Red/Blue assignment is non-random;
+  \item \textbf{Label asymmetry}: The Red/Blue assignment is non-random as
   Red fighters tend to be higher-ranked and older.
   This means the difference features carry a structural bias toward the
   Red corner that the model must implicitly correct for.
   \item \textbf{Fixed hyperparameters}: Hyperparameters for Random Forest
-  and XGBoost were not formally tuned; nested CV for these models might
-  close the small remaining gap to the bookmaker.
+  and XGBoost were not formally tuned.
   \item \textbf{Chronological split}: Using only the last 20\% of fights as
   the test set means test performance is measured on recent fights.
   If fighter statistics tracking or matchmaking strategy has changed over
-  time, the train-test gap may reflect distributional shift rather than
-  true generalisation error.
+  time, the train-test gap may reflect a distributional shift rather than
+  a true generalisation error.
 \end{itemize}
 
 %% -------------------------------------------------------------------------
@@ -572,7 +566,7 @@ The most practically significant finding is the consistency of the
 bookmaker gap across all models.
 It establishes a clear ceiling: the information contained in publicly
 available cumulative career statistics is real but insufficient, and
-closing the gap would require access to information that is currently
-not captured in any public dataset.
+closing the gap would likely require access to information that is not
+neatly available in some public dataset.
 
 \end{document}
