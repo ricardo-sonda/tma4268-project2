@@ -12,6 +12,7 @@ This top-level file is only an entrypoint. The canonical project manual lives un
 - Iteration workflow: [`docs/workflows/iteration.md`](docs/workflows/iteration.md)
 - Evaluation workflow: [`docs/workflows/evaluation.md`](docs/workflows/evaluation.md)
 - Command reference: [`docs/reference/commands.md`](docs/reference/commands.md)
+- Latex report: [`reports/latex/report.pdf`](reports/latex/report.pdf)
 
 ## Common Commands
 
